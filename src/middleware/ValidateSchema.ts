@@ -2,7 +2,8 @@ import joi, { ObjectSchema } from 'joi';
 import { Response, Request, NextFunction } from 'express';
 import Logging from '../library/Logging';
 import IUser from '../interfaces/user';
-import { IWallet } from '../models/Wallet';
+import IRemittance from '@src/interfaces/remittance';
+import { IRemittanceModel } from '@src/models/Remittance';
 
 export const ValidateSchema = (schema: ObjectSchema) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -20,23 +21,27 @@ export const ValidateSchema = (schema: ObjectSchema) => {
 export const Schemas = {
     user: {
         create: joi.object<IUser>({
-            name: joi.string().required()
+            name: joi.string().required(),
+            email: joi.string().required().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] }}),
+            password: joi.string().required()
         }),
         update: joi.object<IUser>({
             name: joi.string().required()
         })
     },
-    wallet: {
-        create: joi.object<IWallet>({
-            name: joi.string().required(),
-            user: joi
-                .string()
-                .regex(/^[0-9a-fA-F]{24}$/)
-                .required()
+    remittance: {
+        create: joi.object<IRemittance>({
+            user_email: joi.string().required(),
+            card: joi.string().required(),
+            full_name: joi.string(),
+            phone_number: joi.string(),
+            amount: joi.number().required(),
+            currency: joi.string().required(),
+            budget: joi.number().required(),
+            budget_currency: joi.string().required()
         }),
-        update: joi.object<IWallet>({
-            name: joi.string().required(),
-            user: joi.string().regex(/^[0-9a-fA-F]{24}$/)
+        update: joi.object<IRemittance>({
+            // process_status: joi.string().required()
         })
     }
 };

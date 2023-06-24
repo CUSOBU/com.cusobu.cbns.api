@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import { config } from './config/config';
 import Logging from './library/Logging';
 import userRoutes from './routes/User';
-import walletRoutes from './routes/Wallet';
+import remittanceRoutes from './routes/Remittance';
 
 const app: Application = express();
 
@@ -31,7 +31,7 @@ const startTest = () => {
             app.use(express.urlencoded({ extended: true }));
             app.use(express.json());
             app.use('/users', userRoutes);
-            app.use('/wallets', walletRoutes);
+            app.use('/remittances', remittanceRoutes);
 
             /** HealthCheck */
             app.get('/health-check', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK' }));
@@ -83,10 +83,10 @@ const StartServer = () => {
     /** Routes */
 
     app.use('/users', userRoutes);
-    app.use('/wallets', walletRoutes);
+    app.use('/remittances', remittanceRoutes);
 
     /** HealthCheck */
-    app.get('/health-check', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK' }));
+    app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK' }));
 
     /** Error handling */
     app.use((req: Request, res: Response, next: NextFunction) => {
