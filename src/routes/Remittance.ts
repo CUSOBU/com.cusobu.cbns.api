@@ -8,6 +8,8 @@ router.post('/', ValidateSchema(Schemas.remittance.create), controller.create);
 
 router.get('/', controller.search);
 
+router.get('/:id', controller.getOne);
+
 router.post('/filter', controller.filter);
 
 router.patch('/:id', ValidateSchema(Schemas.remittance.update), controller.update);

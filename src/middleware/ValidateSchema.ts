@@ -32,7 +32,7 @@ export const Schemas = {
     remittance: {
         create: joi.object<IRemittance>({
             user_email: joi.string().required(),
-            card: joi.string().required(),
+            cardNumber: joi.string().required(),
             full_name: joi.string(),
             phone_number: joi.string(),
             amount: joi.number().required(),
@@ -41,7 +41,8 @@ export const Schemas = {
             budget_currency: joi.string().required()
         }),
         update: joi.object<IRemittance>({
-            // process_status: joi.string().required()
+            process_status: joi.string(),
+            source_reference: joi.string()
         })
     }
 };

@@ -15,14 +15,14 @@ const RemittanceSchema: Schema = new Schema(
     {
         identifier: { type: Number, required: true, unique: true },
         user_email: { type: String, required: true },
-        card: { type: String, required: true },
+        cardNumber: { type: String, required: true },
         full_name: { type: String, required: true },
         phone_number: { type: String, required: true },
         amount: { type: Number, required: true },
         currency: { type: String, required: true },
         budget: { type: Number, required: true },
         budget_currency: { type: String, required: true },
-        source_reference: { type: String, required: true },
+        source_reference: { type: String },
         process_status: { type: String, required: true, default: 'pending' }
     },
     schemaOptions

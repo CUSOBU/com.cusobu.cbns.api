@@ -1,6 +1,6 @@
 export default interface IRemittance {
     user_email: string;
-    card: string;
+    cardNumber: string;
     full_name: string;
     phone_number: string;
     amount: number;
