@@ -34,17 +34,28 @@ export const Schemas = {
     remittance: {
         create: joi.object<IRemittance>({
             user_email: joi.string().required(),
-            cardNumber: joi.string().required(),
             full_name: joi.string(),
-            phone_number: joi.string(),
-            amount: joi.number().required(),
-            currency: joi.string().required(),
-            budget: joi.number().required(),
-            budget_currency: joi.string().required()
+           phone_number: joi.string(),
+           cardNumber: joi.string().required(),
+           remittance_amount: joi.number(),
+           remittance_currency: joi.string().required(),
+           budget_amount: joi.number().required(),
+           operation_cost: joi.number(),
+           budget_currency: joi.string().required(),
+           source_reference: joi.string(),
+           status: joi.string().default('pending'),
+           statusCode: joi.number().default(0),
+           webhook: joi.string(),
+           evidence: joi.string(),
+           details: joi.string()
+            
         }),
         update: joi.object<IRemittance>({
-            process_status: joi.string(),
-            source_reference: joi.string()
+            status: joi.string(),
+            statusCode: joi.number(),
+            webhook: joi.string(),
+            evidence: joi.string(),
+            details: joi.string()
         })
     },
     balance: {

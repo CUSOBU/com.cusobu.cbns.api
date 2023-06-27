@@ -8,42 +8,43 @@ import { number } from 'joi';
 
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-
-    // USAR AQUI getRemittancePrice PARA CALCULAR LOS PRECIOS
     
-    const {user_email, cardNumber, full_name, phone_number, amount, currency, budget, budget_currency} = req.body;
+    const {user_email,  full_name, phone_number, cardNumber, remittance_currency, budget_amount,
+    budget_currency} = req.body;
+
     let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
 
     const identifier = await Remittance.countDocuments()+1
     const webhook = config.URL + '/walak/mlc/' + identifier+"-"+encryptedCard;
-    const remittance_currency = currency;
 
     //Seguir Aqui
-    const remmitancePrice = await getPrices(user_email, budget, budget_currency, remittance_currency);
+    const remittancePrice = await getPrices(user_email, budget_amount, budget_currency, remittance_currency);
+    const remittance_amount = remittancePrice['remittance_amount'];
+    const operation_cost = remittancePrice['operation_cost'];
 
-    if(currency=='CUP'){
+    if(remittance_currency=='CUP'){
         //Poner recarga CUP
-        res.status(400).json({ error: 'CUP is not a valid currency' });
-    }else if(currency=='USD'){
-        //Poner recarga USD
+        res.status(400).json({ error: 'CUP is not a valid currency (NOW)' });
+    }else if(remittance_currency=='MLC'){
+        // Remittance MLC
+        let remittanceWalak = { user_email, cardNumber, full_name, phone_number, remittance_amount, webhook };
+        let responseSource = await walak.postRemittance(remittanceWalak);
 
+        let remittance = new Remittance({ identifier, user_email, full_name, phone_number, cardNumber: encryptedCard, remittance_amount: remittance_amount, 
+            remittance_currency, budget_amount, operation_cost, budget_currency, source_reference: responseSource['id'], status: responseSource['status'], 
+            statusCode: responseSource['statusCode'], webhook:webhook});
+
+            await Balance.addBudget(user_email, operation_cost, budget_currency)
+
+            return remittance
+                .save()
+                .then((remittance: IRemittance) => res.status(201).json({ remittance }))
+                .catch((error) => {
+                    res.status(400).json({ error });
+                });
     }else{
         res.status(400).json({ error: 'Currency is not valid' });
     }
-
-    let remittanceData = { user_email, cardNumber, full_name, phone_number, amount, webhook };
-
-    let responseSource = await walak.postRemittance(remittanceData);
-
-    let remittance = new Remittance({ identifier, user_email, cardNumber: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency, status: responseSource['status'], statusCode: responseSource['statusCode'], source_reference: responseSource['id'], webhook:webhook});
-    // let remittance = new Remittance({ identifier, user_email, cardNumber: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency});
-
-    return remittance
-        .save()
-        .then((remittance: IRemittance) => res.status(201).json({ remittance }))
-        .catch((error) => {
-            res.status(500).json({ error });
-        });
 };
 
 
@@ -184,7 +185,6 @@ const getOne = (req: Request, res: Response, next: NextFunction) => {
 
 const getRemittancePrice = async (req: Request, res: Response, next: NextFunction) => {
    
-    console.log(req.body);
    const email = "jorgeyosmiel90@gmail.com";
 
    const budget = Number(req.body.budget);
@@ -201,24 +201,26 @@ const getPrices = async (email:string, budget_amount: number, budget_currency: s
     const balance = await Balance.getBalanceByEmail(email);
 
     if(!balance){
-        return {message: 'There is no accounting balance to the user'};
+        return {budget_amount: 0, remittance_amount: 0, operation_cost: 0};
     }
 
     const operational_price:number = balance.operational_price
     const customer_price:number = balance.customer_price
 
-    let remmitance_amount= (budget_amount*1/customer_price);
-    let operation_cost = (remmitance_amount*operational_price);
+    let remittance_amount= (budget_amount*1/customer_price);
+    let operation_cost = (remittance_amount*operational_price);
 
-    console.log('remmitance_amount', remmitance_amount);
     if(budget_currency == 'UYU'){
-        remmitance_amount = remmitance_amount/Number(config.uyu_exchange_rate);
+        remittance_amount = remittance_amount/Number(config.uyu_exchange_rate);
     }
     if(remmitance_currency == 'CUP'){
-        remmitance_amount = remmitance_amount*Number(config.cup_exchange_rate);
+        remittance_amount = remittance_amount*Number(config.cup_exchange_rate);
     }
 
-    const remittance_prices = {budget_amount: budget_amount.toFixed(), remmitance_amount: parseInt(remmitance_amount.toFixed()), operation_cost: operation_cost.toFixed(2)};
+    const remittance_prices = {budget_amount: Number(budget_amount.toFixed()), 
+                                remittance_amount: Math.round(remittance_amount),
+                                operation_cost: Number(operation_cost.toFixed(2))
+                              };
 
     return remittance_prices;
 };

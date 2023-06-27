@@ -10,7 +10,6 @@ const WALAK_API_KEY= "yVasDgAmcnbkiquign0XdvrehxdAPhPPf6R5jC9M8tDbN8B0PmOamVV7x7
 
 const updateStatusNotification = async (req: Request, res: Response, next: NextFunction) => {
 
-    console.log("updateStatusNotification");
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({ message: 'Request body must not be empty' });
     }
@@ -37,11 +36,13 @@ const updateStatusNotification = async (req: Request, res: Response, next: NextF
 
 };
 
+// let remittanceWalak = { user_email, cardNumber, full_name, phone_number, remittance_amount, webhook };
+
 const postRemittance = async (data: any) => {
 
     let remittanceData:any = {};
     remittanceData.cardNumber = data.cardNumber ;
-    remittanceData.amount = data.amount;
+    remittanceData.amount = data.remittance_amount;
     remittanceData.senderName = data.full_name;
     remittanceData.phoneNumber = data.phone_number;
     remittanceData.webhook = data.webhook;

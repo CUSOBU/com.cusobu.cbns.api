@@ -32,6 +32,48 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     return res.status(201).json({ balance })
 };
 
+const addBudget = async (email:string, budget:number, budget_currency:string) => {
+
+    let balance = await Balance.findOne({ email: email });
+
+    if (!balance) {
+        return { error: 'Balance does not exist' };
+    }
+
+    if(budget_currency == 'UYU'){
+        if(!balance.pre_paid){
+            if(balance.balance_uyu + budget <= balance.operational_limit){
+                balance.balance_uyu = balance.balance_uyu + budget;
+                
+            }else{
+                return { error: 'Insufficient funds' };
+            }            
+        }else{
+            if(balance.balance_uyu - budget > 0 || balance.allow_overlimit){
+                balance.balance_uyu = balance.balance_uyu - budget;
+            }else{
+                return { error: 'Insufficient funds' };
+            } 
+        }
+    }else if(budget_currency == 'USD'){
+        if(!balance.pre_paid){
+            if(balance.balance_usd + budget <= balance.operational_limit){
+                balance.balance_usd = balance.balance_usd + budget;
+            }else{
+                return { error: 'Insufficient funds' };
+            }            
+        }else{
+            if(balance.balance_usd - budget > 0 || balance.allow_overlimit){
+                balance.balance_usd = balance.balance_usd - budget;
+            }else{
+                return { error: 'Insufficient funds' };
+            } 
+        }
+    }
+    balance.save();
+
+}
+
 const getAll = async (req: Request, res: Response, next: NextFunction) => {
 
     let { page = 1, pageSize = 20 } = req.query;
@@ -79,6 +121,7 @@ export default {
     getAll,
     getOne,
     update,
-    getBalanceByEmail
+    getBalanceByEmail,
+    addBudget
 };
 

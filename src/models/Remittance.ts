@@ -15,17 +15,20 @@ const RemittanceSchema: Schema = new Schema(
     {
         identifier: { type: Number, required: true, unique: true },
         user_email: { type: String, required: true },
-        cardNumber: { type: String, required: true },
         full_name: { type: String, required: true },
         phone_number: { type: String, required: true },
-        amount: { type: Number, required: true },
-        currency: { type: String, required: true },
-        budget: { type: Number, required: true },
+        cardNumber: { type: String, required: true },   
+        remittance_amount: { type: Number, required: true },
+        remittance_currency: { type: String, required: true },
+        budget_amount: { type: Number, required: true },
+        operation_cost: { type: Number, required: true },
         budget_currency: { type: String, required: true },
         source_reference: { type: String },
         status: { type: String, required: true, default: 'pending' },
         statusCode: { type: String, required: true, default: '0' },
-        webhook: { type: String }
+        webhook: { type: String },
+        evidence: { type: String },
+        details: { type: String }
     },
     schemaOptions
 );
