@@ -23,7 +23,9 @@ const RemittanceSchema: Schema = new Schema(
         budget: { type: Number, required: true },
         budget_currency: { type: String, required: true },
         source_reference: { type: String },
-        process_status: { type: String, required: true, default: 'pending' }
+        status: { type: String, required: true, default: 'pending' },
+        statusCode: { type: String, required: true, default: '0' },
+        webhook: { type: String }
     },
     schemaOptions
 );

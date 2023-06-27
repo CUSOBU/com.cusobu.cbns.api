@@ -5,6 +5,8 @@ import { config } from './config/config';
 import Logging from './library/Logging';
 import userRoutes from './routes/User';
 import remittanceRoutes from './routes/Remittance';
+import walakRoutes from './routes/Walak';
+import balanceRoutes from './routes/Balance';
 
 const app: Application = express();
 
@@ -81,12 +83,13 @@ const StartServer = () => {
     });
 
     /** Routes */
-
     app.use('/users', userRoutes);
     app.use('/remittances', remittanceRoutes);
+    app.use('/walak', walakRoutes);
+    app.use('/balances', balanceRoutes);
 
     /** HealthCheck */
-    app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK' }));
+    app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK :)' }));
 
     /** Error handling */
     app.use((req: Request, res: Response, next: NextFunction) => {

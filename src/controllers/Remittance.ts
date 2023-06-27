@@ -1,67 +1,51 @@
 import { Response, Request, NextFunction } from 'express';
 import Remittance, { IRemittance } from '../models/Remittance';
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
-import fetch from 'node-fetch';
-import axios from 'axios';
+import {config} from '../config/config';
+import walak from '../services/WalakAPI';
+import codificator from '../common/Codification';
+import Balance from './Balance';
+import { number } from 'joi';
 
-const WALAK_API_KEY = "sV4ZIyQgCehXciZibLcTqKH7Fuzq1tpBMuZLT+2CwUJIJMe+eZUsODwc3tQAloWx0OzoHR9F4JHrxIyGps0MWk7XdPgdYwjqcpWKdYMrv03QANgcuH2LFQddoe7H6th+dItg=="
-const WALAK_API_URL = "https://api.dev.walak.app/api/mlc"
-
-const algorithm = 'aes-256-cbc';
-const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3'; // Recuerda cambiar esto por tu propia clave secreta
-const iv = crypto.randomBytes(16); // IV debe ser de 16 bytes
-
-const saltRounds = 10;
-const ITEMS_PER_PAGE = 20;
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-    const identifier = await Remittance.countDocuments()+1
+
+    // USAR AQUI getRemittancePrice PARA CALCULAR LOS PRECIOS
+    
     const {user_email, cardNumber, full_name, phone_number, amount, currency, budget, budget_currency} = req.body;
-    let encryptedCard = encrypt(cardNumber); // encriptar la tarjeta
+    let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
 
-    let remittanceData = { identifier, user_email, cardNumber, full_name, phone_number, amount, currency, budget, budget_currency };
+    const identifier = await Remittance.countDocuments()+1
+    const webhook = config.URL + '/walak/mlc/' + identifier+"-"+encryptedCard;
+    const remittance_currency = currency;
 
-/*     let responseSource = postRemittanceToSource(remittanceData);
-    console.log(responseSource); */
+    //Seguir Aqui
+    const remmitancePrice = await getPrices(user_email, budget, budget_currency, remittance_currency);
 
-    // let remittance = new Remittance({ identifier, user_email, card: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency, process_status: (await responseSource).data.id, source_reference: (await responseSource).data.id });
-    let remittance = new Remittance({ identifier, user_email, cardNumber: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency});
+    if(currency=='CUP'){
+        //Poner recarga CUP
+        res.status(400).json({ error: 'CUP is not a valid currency' });
+    }else if(currency=='USD'){
+        //Poner recarga USD
+
+    }else{
+        res.status(400).json({ error: 'Currency is not valid' });
+    }
+
+    let remittanceData = { user_email, cardNumber, full_name, phone_number, amount, webhook };
+
+    let responseSource = await walak.postRemittance(remittanceData);
+
+    let remittance = new Remittance({ identifier, user_email, cardNumber: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency, status: responseSource['status'], statusCode: responseSource['statusCode'], source_reference: responseSource['id'], webhook:webhook});
+    // let remittance = new Remittance({ identifier, user_email, cardNumber: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency});
 
     return remittance
         .save()
         .then((remittance: IRemittance) => res.status(201).json({ remittance }))
-        .catch((error) => res.status(500).json({ error }));
-};
-
-const postRemittanceToSource = async (data: any) => {
-
-    let remittanceData:any = {};
-    remittanceData.cardNumber = data.cardNumber ;
-    remittanceData.amount = data.amount;
-    remittanceData.senderName = data.full_name;
-    remittanceData.phoneNumber = data.phone_number;
-
-    try {
-        const response = await axios.post(WALAK_API_URL, remittanceData, {
-            headers: { 'Authorization': `Bearer ${WALAK_API_KEY}` }
+        .catch((error) => {
+            res.status(500).json({ error });
         });
-
-        if (response.status !== 200) {
-            throw new Error('Failed to register remittance with other API');
-        }
-
-        console.log(`Created object id: ${response.data.id}`); // Log the created object id
-
-        // If the request was successful, you could return the response from the other API
-        // Or you could just return your own response
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-    
 };
+
 
 const update = (req: Request, res: Response, next: NextFunction) => {
 
@@ -72,7 +56,7 @@ const update = (req: Request, res: Response, next: NextFunction) => {
     
     return Remittance.findOneAndUpdate({ identifier: remittanceId }, req.body)
         .then((remittance) => (remittance ? res.status(200).json({ remittance }) : res.status(404).json({ message: 'Not found' })))
-        .catch((error) => res.status(500).json({ error }));
+        .catch((error) => res.status(400).json({ error }));
 };
 
 const search = async (req: Request, res: Response, next: NextFunction) => {
@@ -98,7 +82,7 @@ const search = async (req: Request, res: Response, next: NextFunction) => {
         .limit(pageSize)
         .then((remittances) => {
             remittances = remittances.map(remittance => {
-                remittance.cardNumber = decrypt(remittance.cardNumber); // desencriptar la tarjeta
+                remittance.cardNumber = codificator.decrypt(remittance.cardNumber); // desencriptar la tarjeta
                 return remittance;
             });
 
@@ -167,7 +151,7 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
         .limit(pageSize)
         .then((remittances) => {
             remittances = remittances.map(remittance => {
-                remittance.cardNumber = decrypt(remittance.cardNumber); // desencriptar la tarjeta
+                remittance.cardNumber = codificator.decrypt(remittance.cardNumber); // desencriptar la tarjeta
                 return remittance;
             });
 
@@ -181,7 +165,7 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
                 remittances
             });
         })
-        .catch((error) => res.status(500).json({ error }));
+        .catch((error) => res.status(400).json({ error }));
 };
 
 const getOne = (req: Request, res: Response, next: NextFunction) => {
@@ -190,37 +174,60 @@ const getOne = (req: Request, res: Response, next: NextFunction) => {
     Remittance.findOne({ identifier: remittanceId })
         .then((remmitances) => {
             if (remmitances) {
-                remmitances.cardNumber = decrypt(remmitances.cardNumber); // desencriptar la tarjeta
+                remmitances.cardNumber = codificator.decrypt(remmitances.cardNumber); // desencriptar la tarjeta
                 res.status(200).json({ remmitances });
             } else {
                 res.status(404).json({ message: 'Not found' });
             }
         })
-
 }
+
+const getRemittancePrice = async (req: Request, res: Response, next: NextFunction) => {
+   
+    console.log(req.body);
+   const email = "jorgeyosmiel90@gmail.com";
+
+   const budget = Number(req.body.budget);
+   const budget_currency = req.body.budget_currency;
+   const remmitance_currency:string = req.body.remmitance_currency;
+
+    const remittance_prices = await getPrices(email, budget, budget_currency, remmitance_currency);
+
+    res.status(200).json({ message: 'ok',  remittance_prices});
+};
+
+const getPrices = async (email:string, budget_amount: number, budget_currency: string, remmitance_currency: string) => {
+    
+    const balance = await Balance.getBalanceByEmail(email);
+
+    if(!balance){
+        return {message: 'There is no accounting balance to the user'};
+    }
+
+    const operational_price:number = balance.operational_price
+    const customer_price:number = balance.customer_price
+
+    let remmitance_amount= (budget_amount*1/customer_price);
+    let operation_cost = (remmitance_amount*operational_price);
+
+    console.log('remmitance_amount', remmitance_amount);
+    if(budget_currency == 'UYU'){
+        remmitance_amount = remmitance_amount/Number(config.uyu_exchange_rate);
+    }
+    if(remmitance_currency == 'CUP'){
+        remmitance_amount = remmitance_amount*Number(config.cup_exchange_rate);
+    }
+
+    const remittance_prices = {budget_amount: budget_amount.toFixed(), remmitance_amount: parseInt(remmitance_amount.toFixed()), operation_cost: operation_cost.toFixed(2)};
+
+    return remittance_prices;
+};
 
 export default {
     create,
     update,
     search,
     filter,
-    getOne
-};
-
-// Encriptar y desencriptar txt
-const encrypt = (text: string) => {
-    const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
-
-    const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
-
-    return `${iv.toString('hex')}:${encrypted.toString('hex')}`;
-};
-
-const decrypt = (encryptedText:string) => {
-    let [iv, encrypted] = encryptedText.split(':');
-    const decipher = crypto.createDecipheriv(algorithm, secretKey, Buffer.from(iv, 'hex'));
-
-    const decrypted = Buffer.concat([decipher.update(Buffer.from(encrypted, 'hex')), decipher.final()]);
-
-    return decrypted.toString();
+    getOne,
+    getRemittancePrice
 };

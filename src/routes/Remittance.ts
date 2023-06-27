@@ -6,6 +6,8 @@ const router = Router();
 
 router.post('/', ValidateSchema(Schemas.remittance.create), controller.create);
 
+router.post('/pricing', controller.getRemittancePrice);
+
 router.get('/', controller.search);
 
 router.get('/:id', controller.getOne);
