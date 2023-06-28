@@ -25,10 +25,12 @@ export const Schemas = {
         create: joi.object<IUser>({
             name: joi.string().required(),
             email: joi.string().required().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'uy'] }}),
-            password: joi.string().required()
+            password: joi.string().required(),
+            role: joi.string().default('seller')
         }),
         update: joi.object<IUser>({
-            name: joi.string().required()
+            name: joi.string().required(),
+            role: joi.string()
         })
     },
     remittance: {

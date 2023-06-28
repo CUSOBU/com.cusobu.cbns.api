@@ -7,8 +7,15 @@ import userRoutes from './routes/User';
 import remittanceRoutes from './routes/Remittance';
 import walakRoutes from './routes/Walak';
 import balanceRoutes from './routes/Balance';
+import authRoutes from './routes/auth';
+import passportStrategy from './config/passport';
+import passport from 'passport';
+
 
 const app: Application = express();
+
+passportStrategy(passport);
+// app.use(passport.initialize());
 
 /**
  * Mongo connect
@@ -87,6 +94,8 @@ const StartServer = () => {
     app.use('/remittances', remittanceRoutes);
     app.use('/walak', walakRoutes);
     app.use('/balances', balanceRoutes);
+    app.use('/', authRoutes);
+    app.use('/login', authRoutes);
 
     /** HealthCheck */
     app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK :)' }));

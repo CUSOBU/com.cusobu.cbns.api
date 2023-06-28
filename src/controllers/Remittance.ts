@@ -8,17 +8,17 @@ import { number } from 'joi';
 
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-    
-    const {user_email,  full_name, phone_number, cardNumber, remittance_currency, budget_amount,
+
+    const {email,  full_name, phone_number, cardNumber, remittance_currency, budget_amount,
     budget_currency} = req.body;
 
     let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
 
-    const identifier = await Remittance.countDocuments()+1
+    const identifier = await Remittance.countDocuments()+1;
     const webhook = config.URL + '/walak/mlc/' + identifier+"-"+encryptedCard;
 
     //Seguir Aqui
-    const remittancePrice = await getPrices(user_email, budget_amount, budget_currency, remittance_currency);
+    const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency);
     const remittance_amount = remittancePrice['remittance_amount'];
     const operation_cost = remittancePrice['operation_cost'];
 
@@ -27,14 +27,14 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
         res.status(400).json({ error: 'CUP is not a valid currency (NOW)' });
     }else if(remittance_currency=='MLC'){
         // Remittance MLC
-        let remittanceWalak = { user_email, cardNumber, full_name, phone_number, remittance_amount, webhook };
+        let remittanceWalak = { email, cardNumber, full_name, phone_number, remittance_amount, webhook };
         let responseSource = await walak.postRemittance(remittanceWalak);
 
-        let remittance = new Remittance({ identifier, user_email, full_name, phone_number, cardNumber: encryptedCard, remittance_amount: remittance_amount, 
+        let remittance = new Remittance({ identifier, user_email:email, full_name, phone_number, cardNumber: encryptedCard, remittance_amount: remittance_amount, 
             remittance_currency, budget_amount, operation_cost, budget_currency, source_reference: responseSource['id'], status: responseSource['status'], 
             statusCode: responseSource['statusCode'], webhook:webhook});
 
-            await Balance.addBudget(user_email, operation_cost, budget_currency)
+            await Balance.addBudget(email, operation_cost, budget_currency)
 
             return remittance
                 .save()
@@ -101,7 +101,7 @@ const search = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const filter = async (req: Request, res: Response, next: NextFunction) => {
-    let { process_status, startDate, endDate, currency, budget_currency, phone_number, source_reference } = req.body;
+    let { user_email= req.body.email, process_status, startDate, endDate, currency, budget_currency, phone_number, source_reference } = req.body;
     let { page = 1, pageSize = 20 } = req.query;
 
     let localDate = new Date(startDate);  // Convert string to Date object
@@ -184,8 +184,8 @@ const getOne = (req: Request, res: Response, next: NextFunction) => {
 }
 
 const getRemittancePrice = async (req: Request, res: Response, next: NextFunction) => {
-   
-   const email = "jorgeyosmiel90@gmail.com";
+
+   const email = req.body.email;
 
    const budget = Number(req.body.budget);
    const budget_currency = req.body.budget_currency;

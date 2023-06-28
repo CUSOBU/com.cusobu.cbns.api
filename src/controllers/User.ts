@@ -10,13 +10,13 @@ const saltRounds = 10;
 
 const create = (req: Request, res: Response, next: NextFunction) => {
     
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
     // encriptar la contraseña
     bcrypt.hash(password, saltRounds, function(err, hash) {
         if(err) {
             return res.status(500).json({ error: err });
         }
-        const user = new User({ name, email, password: hash });
+        const user = new User({ name, email, password: hash, role });
 
         return user
             .save()

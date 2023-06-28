@@ -1,13 +1,13 @@
 import { Router } from 'express'
 import controller from '../controllers/Balance'
 import { Schemas, ValidateSchema } from '../middleware/ValidateSchema'
-import { route } from './User'
+import { verifyJWT, authorizeRole } from '../middleware/AuthMiddleware';
 
 const router = Router()
 
-router.get('/', controller.getAll)
-router.get('/:email', controller.getOne)
-router.patch('/:email', controller.update)
-router.post('/', ValidateSchema(Schemas.balance.create), controller.create)
+router.get('/', verifyJWT, controller.getAll)
+router.get('/:email', verifyJWT, controller.getOne)
+router.patch('/:email', verifyJWT, controller.update)
+router.post('/', verifyJWT, ValidateSchema(Schemas.balance.create), controller.create)
 
 export = router;
