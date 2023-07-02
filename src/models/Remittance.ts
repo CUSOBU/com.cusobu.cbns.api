@@ -14,7 +14,7 @@ export interface IRemittanceModel extends IRemittance, Document {}
 const RemittanceSchema: Schema = new Schema(
     {
         identifier: { type: Number, required: true, unique: true },
-        user_email: { type: String, required: true },
+        email: { type: String, required: true },
         full_name: { type: String, required: true },
         phone_number: { type: String, required: true },
         cardNumber: { type: String, required: true },   

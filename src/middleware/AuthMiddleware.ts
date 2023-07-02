@@ -32,6 +32,7 @@ export async function verifyJWT(req: Request, res: Response, next: NextFunction)
         return res.status(400).json({ error: 'User not exists' });
       }
 
+      console.log('User authenticated', req.body);
       next();
     });
   }
@@ -64,26 +65,25 @@ export async function generateJWT(req: Request, res: Response) {
 
     const { email  } = req.body;
 
-    const user = await User.findOne({ email: email  });
+    const user = await User.findOne({ email: email });
 
     if (!user) {
-      return res.status(400).json({ error: 'User not exists' });
+      return res.status(401).json({ error: 'Failed to login, invalid user/password'});
     }
 
     const passwordIsValid = await bcrypt.compare(req.body.password, user.password);
 
     if (!passwordIsValid) {
-      return res.status(400).json({ error: 'Failed to login, invalid password' });
+      return res.status(401).json({ error: 'Failed to login, invalid user/password'});
     }
 
     const { id } = user;
-    console.log(id);
 
     const newToken = jwt.sign({ id }, config.SECRET_KEY, { expiresIn: '1d' });
 
-    return res.status(200).json(newToken);
+    return res.status(200).json({token_jwt: newToken, email: user.email, roles: user.role});
   }
-  return res.status(400).json({ error: 'No headers provided' });
+  return res.status(401).json({ error: 'No headers provided' });
 }
 
 export default { verifyJWT, generateJWT, authorizeRole };
