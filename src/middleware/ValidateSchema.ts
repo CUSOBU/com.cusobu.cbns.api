@@ -26,7 +26,8 @@ export const Schemas = {
             name: joi.string().required(),
             email: joi.string().required().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'uy'] }}),
             password: joi.string().required(),
-            role: joi.string().default('seller')
+            role: joi.string().default('seller'),
+            user: joi.string().required(),
         }),
         update: joi.object<IUser>({
             name: joi.string().required(),
@@ -53,11 +54,13 @@ export const Schemas = {
             
         }),
         update: joi.object<IRemittance>({
+            email: joi.string().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'uy'] }}),
             status: joi.string(),
             statusCode: joi.number(),
             webhook: joi.string(),
             evidence: joi.string(),
-            details: joi.string()
+            details: joi.string(),
+            provider: joi.string()
         })
     },
     balance: {

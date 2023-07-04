@@ -7,27 +7,40 @@ import Balance from './Balance';
 import { number } from 'joi';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-    const { email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency } = req.body;
+    const { email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency} = req.body;
 
     let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
 
     const identifier = (await Remittance.countDocuments()) + 1;
     const webhook = config.URL + '/walak/mlc/' + identifier + '-' + encryptedCard;
 
-    //Seguir Aqui
     const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency);
     const remittance_amount = remittancePrice['remittance_amount'];
     const operation_cost = remittancePrice['operation_cost'];
 
+    let remittance = new Remittance({});
     if (remittance_currency == 'CUP') {
         //Poner recarga CUP
-        res.status(400).json({ error: 'CUP is not a valid currency (NOW)' });
+        remittance = new Remittance({
+            identifier,
+            email,
+            full_name,
+            phone_number,
+            cardNumber: encryptedCard,
+            remittance_amount: remittance_amount,
+            remittance_currency,
+            budget_amount,
+            operation_cost,
+            budget_currency,
+            status: 'Pending',
+            statusCode: 0
+        });
     } else if (remittance_currency == 'MLC') {
         // Remittance MLC
         let remittanceWalak = { email, cardNumber, full_name, phone_number, remittance_amount, webhook };
         let responseSource = await walak.postRemittance(remittanceWalak);
 
-        let remittance = new Remittance({
+        remittance = new Remittance({
             identifier,
             email: email,
             full_name,
@@ -43,18 +56,18 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
             statusCode: responseSource['statusCode'],
             webhook: webhook
         });
-
-        await Balance.addBudget(email, operation_cost, budget_currency);
-
-        return remittance
-            .save()
-            .then((remittance: IRemittance) => res.status(201).json({ remittance }))
-            .catch((error) => {
-                res.status(400).json({ error });
-            });
     } else {
         res.status(400).json({ error: 'Currency is not valid' });
     }
+
+    await Balance.addBudget(email, operation_cost, budget_currency);
+
+    return remittance
+        .save()
+        .then((remittance: IRemittance) => res.status(201).json({ remittance }))
+        .catch((error) => {
+            res.status(400).json({ error });
+        });
 };
 
 const update = (req: Request, res: Response, next: NextFunction) => {
@@ -63,8 +76,43 @@ const update = (req: Request, res: Response, next: NextFunction) => {
     }
     const remittanceId = req.params.id;
 
-    return Remittance.findOneAndUpdate({ identifier: remittanceId }, req.body)
+    let remittance = req.body;
+    delete remittance.email;
+
+    return Remittance.findOneAndUpdate({ identifier: remittanceId }, remittance)
         .then((remittance) => (remittance ? res.status(200).json({ remittance }) : res.status(404).json({ message: 'Not found' })))
+        .catch((error) => res.status(400).json({ error }));
+};
+
+const setStatusProvider = async (req: Request, res: Response, next: NextFunction) => {
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({ message: 'Request body must not be empty' });
+    }
+
+    const provider = req.headers.email?.toString();
+    const remittanceId = req.params.id;
+
+    if (!provider || remittanceId == null) {
+        return res.status(400).json({ message: 'Email is required' });
+    }
+
+    let remittance = {provider: provider, status: req.body.status, statusCode: req.body.statusCode, evidence: req.body.evidence};
+    console.log("remittance", remittance)
+
+    return Remittance.findOneAndUpdate({ identifier: remittanceId }, remittance)
+        .then(async (remittance) => {
+            if (!remittance) {
+                return res.status(404).json({ message: 'Not found' });
+            }
+            console.log("remittance", remittance)
+            let balance = await Balance.getBalanceByEmail(provider)
+            console.log("balance", balance)
+            if(!balance){
+                return res.status(500).json({ message: 'Balance not found' });
+            }
+            Balance.addBudget(provider, remittance.remittance_amount*balance.operational_price, remittance.budget_currency);
+            res.status(200).json({ remittance })            
+        })
         .catch((error) => res.status(400).json({ error }));
 };
 
@@ -112,10 +160,15 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
     let { email, status, startDate, endDate, currency, budget_currency, phone_number, source_reference } = req.body;
     let { page = 1, pageSize = 20 } = req.query;
 
-    console.log('FILTER!!!!');
+    if (!email) {
+        email = req.headers.email;
+    }
+
 
     page = Number(page);
     pageSize = Number(pageSize);
+
+    const role = req.headers.role;
 
     // set default values to page and pageSize if they are not numbers
     if (isNaN(page) || page <= 0) {
@@ -128,34 +181,36 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
     // Create filter
     let filter: any = {};
 
+    //Prepare Dates
+
+    let currentDate = new Date();
+    let startOfWeek = new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - currentDate.getDay(), 0, 0, 0)); // Primer día de la semana (domingo)
+    let endOfWeek = new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - currentDate.getDay() + 6, 23, 59, 59)); // Último día de la semana (sábado)
+
+    // ELIMINAR
+    let startOfYear = new Date(Date.UTC(currentDate.getFullYear(), 0, 1, 0, 0, 0)); // Fecha inicial del año
+    startOfWeek = startOfYear;
+
     if (startDate) {
-        // Verify startDate & endDate 
+        // Verify startDate & endDate
         if (!Date.parse(startDate)) {
             return res.status(400).json({ error: 'Invalid startDate' });
         } else {
             let localDate = new Date(startDate); // Convert string to Date object
             startDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 0, 0, 0)); // Convert to UTC
         }
-    }else{
-        const balance = await Balance.getBalanceByEmail(email)
-        if(balance){
-            startDate = balance.last_update;
-        }else{
-            let localDate = new Date(); 
-            startDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 0, 0, 0)); // Convert to UTC
-        }
+    } else {
+        startDate = startOfWeek;
     }
-    if(endDate){
-        if (!Date.parse(endDate)){
+    if (endDate) {
+        if (!Date.parse(endDate)) {
             return res.status(400).json({ error: 'Invalid status' });
-        }else{
+        } else {
             let localDate = new Date(endDate); // Convert string to Date object
             endDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 23, 59, 59)); // Convert to UTC
         }
-
-    }else{
-        const balance = await Balance.getBalanceByEmail(email)
-        endDate = balance?balance.last_update:new Date(0);
+    } else {
+        endDate = endOfWeek;
     }
 
     filter['createdAt'] = {
@@ -166,7 +221,7 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
     if (status) {
         if (!Array.isArray(status)) {
             status = [status];
-          }
+        }
         filter['status'] = { $in: status };
     }
     if (currency) {
@@ -181,11 +236,14 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
     if (phone_number) {
         filter['phone_number'] = phone_number; // Estado del proceso
     }
-    if (email) {
-        filter['email'] = email; // Estado del proceso
+    if (role && role == 'seller') {
+        filter['email'] = email;
+    }else if (role && role == 'provider') {
+        filter['provider'] = { $in: [email,"", null] }; 
+        filter['remittance_currency'] = "CUP"; 
     }
 
-    // get documents count 
+    // get documents count
     const totalDocuments = await Remittance.countDocuments(filter);
 
     // get remittances
@@ -267,5 +325,6 @@ export default {
     search,
     filter,
     getOne,
-    getRemittancePrice
+    getRemittancePrice,
+    setStatusProvider
 };

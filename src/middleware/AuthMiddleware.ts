@@ -26,20 +26,19 @@ export async function verifyJWT(req: Request, res: Response, next: NextFunction)
         return res.status(400).json({ error: 'The user of the token does not exists' });
       }
 
-      req.body.email = user.email;
+      req.headers.email = user.email;
+      req.headers.role = user.role;
 
       if (!user) {
         return res.status(400).json({ error: 'User not exists' });
       }
-
-      console.log('User authenticated', req.body);
       next();
     });
   }
   return res.status(400).json({ error: 'No headers provided' });
 }
 
-export const authorizeRole = (role: string) => (req: Request, res: Response, next: NextFunction) => {
+export const authorizeRole = (roles:string[]) => (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization;
 
     if (!token) {
@@ -47,7 +46,10 @@ export const authorizeRole = (role: string) => (req: Request, res: Response, nex
     }
     
     return jwt.verify(token, config.SECRET_KEY, async (err: any, decoded: any) => {
-      if(decoded.role !== role) {
+
+      const role:string = req.headers.role?req.headers.role.toString():"";
+  
+      if(!roles.includes(role)) {
         return res.status(403).send('No tienes permiso para realizar esta acción');
       }else{
         return next();

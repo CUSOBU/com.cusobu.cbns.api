@@ -15,7 +15,7 @@ const UserSchema: Schema = new Schema(
         email: { type: String, required: true, unique: true },
         name: { type: String, required: true },
         password: { type: String, required: true },
-        role: { type: String, enum: ['seller', 'admin'], default: 'seller' }
+        role: { type: String, enum: ['seller', 'admin', 'provider'], default: 'seller' }
     },
     schemaOptions
 );

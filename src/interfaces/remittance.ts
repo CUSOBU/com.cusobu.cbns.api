@@ -14,4 +14,5 @@ export default interface IRemittance {
     webhook: string;
     evidence: string;
     details: string;
+    provider: string;
 }

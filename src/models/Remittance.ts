@@ -28,7 +28,8 @@ const RemittanceSchema: Schema = new Schema(
         statusCode: { type: String, required: true, default: '0' },
         webhook: { type: String },
         evidence: { type: String },
-        details: { type: String }
+        details: { type: String },
+        provider: { type: String }
     },
     schemaOptions
 );

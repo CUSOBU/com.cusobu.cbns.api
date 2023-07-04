@@ -40,7 +40,7 @@ const addBudget = async (email:string, budget:number, budget_currency:string) =>
         return { error: 'Balance does not exist' };
     }
 
-    if(budget_currency == 'UYU'){
+    if(budget_currency == 'UYU' || budget_currency == 'CUP'){
         if(!balance.pre_paid){
             if(balance.balance_uyu + budget <= balance.operational_limit){
                 balance.balance_uyu = balance.balance_uyu + budget;
@@ -55,7 +55,7 @@ const addBudget = async (email:string, budget:number, budget_currency:string) =>
                 return { error: 'Insufficient funds' };
             } 
         }
-    }else if(budget_currency == 'USD'){
+    }else if(budget_currency == 'USD' || budget_currency == 'MLC'){
         if(!balance.pre_paid){
             if(balance.balance_usd + budget <= balance.operational_limit){
                 balance.balance_usd = balance.balance_usd + budget;
