@@ -1,5 +1,6 @@
 import { Response, Request, NextFunction } from 'express';
 import Remittance, { IRemittance } from '../models/Remittance';
+import RemittanceController from '../controllers/Remittance';
 import axios from 'axios';
 import { config } from '../config/config';
 import codificator from '../common/Codification';
@@ -54,6 +55,24 @@ const updateStatusNotification = async (req: Request, res: Response, next: NextF
             }
             default:
                 return res.status(400).json({ message: 'Invalid status' });
+        }
+
+        const remittanceDB = await Remittance.findOne({ identifier: remittanceId });
+
+        if (!remittanceDB) {
+            return res.status(404).json({ message: 'Not found' });
+        }
+
+        if(req.body.status==='Cancel'){
+            let balance = await Balance.getBalanceByEmail(remittanceDB.email);
+            if(!balance){
+                console.log('Balance not found');
+            }else{
+                const response = await Balance.addBudget(remittanceDB.email, remittanceDB.budget_amount*-1, remittanceDB.budget_currency);
+                if(!response){
+                    console.log('Error updating balance');
+                }
+            }
         }
 
         remittance = await Remittance.findOneAndUpdate({ identifier: remittanceId }, { status: req.body.status, statusCode: req.body.statusCode, provider: 'Walak' });

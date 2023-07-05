@@ -72,7 +72,7 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
     
         balance = await balance.save();
 
-        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / config.uyu_exchange_rate) {
+        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / config.UYU_EXCHANGE) {
             return { status: 200, warning: 'Operational limit exceeded',  balance: balance };
         }
     

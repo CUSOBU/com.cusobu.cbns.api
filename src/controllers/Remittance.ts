@@ -335,10 +335,10 @@ const getPrices = async (email: string, budget_amount: number, budget_currency: 
         let operation_cost = remittance_amount * operational_price;
 
         if (budget_currency == 'UYU') {
-            remittance_amount = remittance_amount / Number(config.uyu_exchange_rate);
+            remittance_amount = remittance_amount / Number(config.UYU_EXCHANGE);
         }
         if (remmitance_currency == 'CUP') {
-            remittance_amount = remittance_amount * Number(config.cup_exchange_rate);
+            remittance_amount = remittance_amount * Number(config.CUP_EXCHANGE);
         }
 
         const remittance_prices = { budget_amount: Number(budget_amount.toFixed()), remittance_amount: Math.round(remittance_amount), operation_cost: Number(operation_cost.toFixed(2)) };

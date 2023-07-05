@@ -68,7 +68,7 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
 
         balance = await balance.save();
 
-        if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / config.cup_exchange_rate) {
+        if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / config.CUP_EXCHANGE) {
             return { status: 400, warning: 'Operational limit exceeded', balance: balance };
         }
 
