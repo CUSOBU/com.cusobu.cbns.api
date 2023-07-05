@@ -1,87 +1,94 @@
 import { Response, Request, NextFunction } from 'express';
 import Balance, { IBalance } from '../models/Balance';
-import User from '../models/User'
-
+import User from '../models/User';
+import { config } from '../config/config';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-    const {email, operational_price, customer_price, balance_usd, balance_uyu, operational_limit, pre_paid, allow_overlimit} = req.body;
-    const balance = new Balance({ email, operational_price, customer_price, balance_usd, balance_uyu, operational_limit, pre_paid, allow_overlimit });
+    try {
+        const { email, operational_price, customer_price, balance_usd = 0, balance_uyu = 0, operational_limit, pre_paid, allow_overlimit } = req.body;
+        const balance = new Balance({ email, operational_price, customer_price, balance_usd, balance_uyu, operational_limit, pre_paid, allow_overlimit });
 
-    const user = await User.findOne({ email: email });
+        let balanceSaved = await balance.save();
 
-    if (!user) {
-        return res.status(404).json({ error: 'User does not exist' });
+        if (!balanceSaved) {
+            return res.status(400).json({ error: 'Error creating Blanace' });
+        }
+
+        return res.status(201).json({ balanceSaved });
+    } catch (error) {
+        return res.status(500).json({ error: 'An error occurred while saving the balance.' });
     }
-
-    return balance
-        .save()
-        .then((balance: IBalance) => res.status(201).json({ balance }))
-        .catch((error) => {
-            res.status(400).json({ error });
-        });
 };
 
 const update = async (req: Request, res: Response, next: NextFunction) => {
-    const userEmail = req.params.email;
+    const userEmail = req.body.email;
 
-    const balance = await Balance.findOneAndUpdate({ email: userEmail }, req.body)
+    try {
+        const balance = await Balance.findOneAndUpdate({ email: userEmail }, req.body);
 
-    if (!balance) {
-        return res.status(404).json({ error: 'Balance does not exist' });
+        if (!balance) {
+            return res.status(404).json({ error: 'Balance does not exist' });
+        }
+        return res.status(201).json({ balance });
+    } catch (error) {
+        return res.status(500).json({ error: 'An error occurred while saving the balance.' });
     }
-    return res.status(201).json({ balance })
 };
 
-const addBudget = async (email:string, budget:number, budget_currency:string) => {
-
-    let balance = await Balance.findOne({ email: email });
-
-    if (!balance) {
-        return { error: 'Balance does not exist' };
-    }
-
-    if(budget_currency == 'UYU' || budget_currency == 'CUP'){
-        if(!balance.pre_paid){
-            if(balance.balance_uyu + budget <= balance.operational_limit){
-                balance.balance_uyu = balance.balance_uyu + budget;
-                
-            }else{
-                return { error: 'Insufficient funds' };
-            }            
-        }else{
-            if(balance.balance_uyu - budget > 0 || balance.allow_overlimit){
-                balance.balance_uyu = balance.balance_uyu - budget;
-            }else{
-                return { error: 'Insufficient funds' };
-            } 
+const postBudget = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const budget = await addBudget(req.body.email, Number(req.body.amount), req.body.budget_currency);
+        if (budget.error) {
+            return res.status(budget.status).json({ error: budget.error});
         }
-    }else if(budget_currency == 'USD' || budget_currency == 'MLC'){
-        if(!balance.pre_paid){
-            if(balance.balance_usd + budget <= balance.operational_limit){
-                balance.balance_usd = balance.balance_usd + budget;
-            }else{
-                return { error: 'Insufficient funds' };
-            }            
-        }else{
-            if(balance.balance_usd - budget > 0 || balance.allow_overlimit){
-                balance.balance_usd = balance.balance_usd - budget;
-            }else{
-                return { error: 'Insufficient funds' };
-            } 
-        }
+        return res.status(201).json({ message: 'Budget added successfully', budget });
+    } catch (error) {
+        return res.status(500).json({ error: 'An error occurred while saving the balance.' });
     }
-    balance.save();
+};
 
-}
+
+const addBudget = async (email: string, budget: number, budget_currency: string) => {
+
+    try {
+        if (!email || !budget || !budget_currency) {
+            return { status: 400, error: 'Missing parameters' };
+        }
+        let balance = await Balance.findOne({ email: email });
+    
+        if (!balance) {
+            return { status: 404, error: 'Balance does not exist' };
+        }
+    
+        if (budget_currency === 'USD') {
+            balance.balance_usd += budget;
+        } else if (budget_currency === 'UYU') {
+            balance.balance_uyu += budget;
+        } else {
+            return { status: 400, error: 'Invalid currency' };
+        }
+    
+        balance.last_update = new Date();
+    
+        balance = await balance.save();
+
+        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / config.uyu_exchange_rate) {
+            return { status: 200, warning: 'Operational limit exceeded',  balance: balance };
+        }
+    
+        return {status: 200, balance : balance};
+    } catch (error) {
+        throw new Error(`An error occurred while saving the balance. ${error}`);
+    }
+};
 
 const getAll = async (req: Request, res: Response, next: NextFunction) => {
-
     let { page = 1, pageSize = 20 } = req.query;
     page = Number(page);
     pageSize = Number(pageSize);
 
-     // Asegurarse de que page y pageSize sean números. Si no, establecer a los valores predeterminados.
-     if (isNaN(page) || page <= 0) {
+    // Asegurarse de que page y pageSize sean números. Si no, establecer a los valores predeterminados.
+    if (isNaN(page) || page <= 0) {
         page = 1;
     }
     if (isNaN(pageSize) || pageSize <= 0) {
@@ -96,7 +103,7 @@ const getAll = async (req: Request, res: Response, next: NextFunction) => {
             // Calcular el total de páginas
             const totalPages = Math.ceil(Number(totalDocuments) / Number(pageSize));
 
-            res.status(200).json({ 
+            res.status(200).json({
                 totalDocuments,
                 totalPages,
                 currentPage: page,
@@ -109,19 +116,35 @@ const getAll = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getOne = async (req: Request, res: Response, next: NextFunction) => {
-    return Balance.findOne({ email: req.params.email })
+    return Balance.findOne({ email: req.params.email });
 };
 
-const getBalanceByEmail = async (email: string) => {
-    return Balance.findOne({ email: email })
+const getBalance = async (req: Request, res: Response, next: NextFunction) => {
+    const email = req.params.email;
+
+    try {
+        const balance = await getBalanceByEmail(email);
+
+        if (!balance) {
+            return res.status(404).json({ error: 'Balance does not exist' });
+        }
+        return res.status(201).json({ balance });
+    } catch (error) {
+        return res.status(500).json({ error: 'An error occurred while saving the balance.' });
+    }
 }
 
-export default { 
+const getBalanceByEmail = async (email: string) => {
+        let balance = await Balance.findOne({ email: email });
+        return balance; 
+};
+
+export default {
     create,
     getAll,
     getOne,
     update,
     getBalanceByEmail,
-    addBudget
+    addBudget,
+    postBudget
 };
-

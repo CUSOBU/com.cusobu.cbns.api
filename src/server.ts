@@ -8,8 +8,10 @@ import remittanceRoutes from './routes/Remittance';
 import walakRoutes from './routes/Walak';
 import balanceRoutes from './routes/Balance';
 import authRoutes from './routes/auth';
+import ProviderBalanceRoutes from './routes/ProviderBalance';
 import passportStrategy from './config/passport';
 import passport from 'passport';
+
 
 
 const app: Application = express();
@@ -94,6 +96,7 @@ const StartServer = () => {
     app.use('/remittances', remittanceRoutes);
     app.use('/walak', walakRoutes);
     app.use('/balances', balanceRoutes);
+    app.use('/providerbalances', ProviderBalanceRoutes);
     app.use('/', authRoutes);
     app.use('/login', authRoutes);
 
