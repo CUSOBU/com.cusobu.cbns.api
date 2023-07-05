@@ -39,6 +39,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
                 status: 'Pending',
                 statusCode: 0
             });
+            
         } else if (remittance_currency == 'MLC') {
             // Remittance MLC (WALAK)
             const webhook = config.URL + '/walak/mlc/' + identifier + '-' + encryptedCard;
@@ -150,7 +151,7 @@ const setStatusProvider = async (req: Request, res: Response, next: NextFunction
             if (!balance) {
                 return res.status(400).json({ message: 'Balance not found' });
             }
-            let balanceResponse = await Balance.addBudget(remittanceDB.email, remittanceDB.remittance_amount * -1, remittanceDB.budget_currency);
+            let balanceResponse = await Balance.addBudget(remittanceDB.email, remittanceDB.operation_cost * -1, remittanceDB.budget_currency);
             if (!balanceResponse || balanceResponse.error) {
                 return res.status(400).json({ message: `Provider Balance not found3. ${balanceResponse.error}` });
             }
@@ -335,10 +336,9 @@ const getPrices = async (email: string, budget_amount: number, budget_currency: 
 
         if (budget_currency == 'UYU') {
             remittance_amount = remittance_amount / Number(config.uyu_exchange_rate);
-        }else if (remmitance_currency == 'CUP') {
+        }
+        if (remmitance_currency == 'CUP') {
             remittance_amount = remittance_amount * Number(config.cup_exchange_rate);
-        }else{
-            throw new Error('Invalid currency');
         }
 
         const remittance_prices = { budget_amount: Number(budget_amount.toFixed()), remittance_amount: Math.round(remittance_amount), operation_cost: Number(operation_cost.toFixed(2)) };
