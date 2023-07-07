@@ -10,6 +10,7 @@ import { number } from 'joi';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('req.body', req.body);
         const { email = req.headers.email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency } = req.body;
 
         let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
@@ -18,6 +19,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
         const identifier = olderRemittance.length > 0 ? olderRemittance[0].identifier + 1 : 1;
 
         const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency);
+        console.log('remittancePrice', remittancePrice);
         const remittance_amount = remittancePrice.remittance_amount;
         const operation_cost = remittancePrice.operation_cost;
 
@@ -39,7 +41,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
                 status: 'Pending',
                 statusCode: 0
             });
-            
+            console.log('remittance', remittance);
         } else if (remittance_currency == 'MLC') {
             // Remittance MLC (WALAK)
             const webhook = config.URL + '/walak/mlc/' + identifier + '-' + encryptedCard;
@@ -115,7 +117,6 @@ const update = (req: Request, res: Response, next: NextFunction) => {
 
 const setStatusProvider = async (req: Request, res: Response, next: NextFunction) => {
     try {
-
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({ message: 'Request body must not be empty' });
         }
@@ -290,7 +291,7 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
 const getOne = (req: Request, res: Response, next: NextFunction) => {
     const remittanceId = req.params.id;
 
-    if(!remittanceId){
+    if (!remittanceId) {
         return res.status(400).json({ error: 'Invalid remittance Ientifierd' });
     }
 
@@ -306,7 +307,7 @@ const getOne = (req: Request, res: Response, next: NextFunction) => {
 
 const getRemittancePrice = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const email:string = req.headers.email?req.headers.email.toString():"";
+        const email: string = req.headers.email ? req.headers.email.toString() : '';
         const budget = Number(req.body.budget);
         const budget_currency = req.body.budget_currency;
         const remmitance_currency: string = req.body.remmitance_currency;
@@ -323,7 +324,6 @@ const getRemittancePrice = async (req: Request, res: Response, next: NextFunctio
 const getPrices = async (email: string, budget_amount: number, budget_currency: string, remmitance_currency: string) => {
     try {
         let balance = await Balance.getBalanceByEmail(email);
-
         if (!balance) {
             throw new Error('Balance not found');
         }
@@ -341,7 +341,7 @@ const getPrices = async (email: string, budget_amount: number, budget_currency: 
             remittance_amount = remittance_amount * Number(config.CUP_EXCHANGE);
         }
 
-        const remittance_prices = { budget_amount: Number(budget_amount.toFixed()), remittance_amount: Math.round(remittance_amount), operation_cost: Number(operation_cost.toFixed(2)) };
+        const remittance_prices = { budget_amount: Number(budget_amount), remittance_amount: Math.round(Number(remittance_amount)), operation_cost: Number(operation_cost) };
 
         return remittance_prices;
     } catch (error) {
