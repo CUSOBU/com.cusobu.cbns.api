@@ -40,15 +40,6 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
                 $lte: new Date() // Menor o igual que endDate
             }
         });
-
-        remittanceByStatus = await serviceRemittances.getRemittancesByStatus({
-            email: email,
-            createdAt: {
-                $gte: balance.last_update, // Mayor o igual que startDate
-                $lte: new Date() // Menor o igual que endDate
-            }
-        });
-
     }
     if (role === 'provider') {
         balance = await providerBalanceController.getBalanceByEmail(email);
@@ -69,7 +60,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
         remittancesDates = await serviceRemittances.getRemittancesByDate({
             provider: email,
             createdAt: {
-                $gte: balance.last_update, // Mayor o igual que startDate
+                $gte: new Date(balance.last_update), // Mayor o igual que startDate
                 $lte: new Date() // Menor o igual que endDate
             }
         });
