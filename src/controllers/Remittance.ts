@@ -39,7 +39,6 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
                 status: 'Pending',
                 statusCode: 0
             });
-            console.log('remittance', remittance);
         } else if (remittance_currency == 'MLC') {
             // Remittance MLC (WALAK)
             const webhook = config.URL + '/walak/mlc/' + identifier + '-' + encryptedCard;
@@ -57,7 +56,6 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
                 throw new Error(`Error creating remittance ${walakError} ${responseSource.data}`);
             }
 
-            console.log('responseSource', responseSource);
             if (!responseSource || responseSource.error) {
                 return res.status(400).json({ error: 'Error creating remittance ' + responseSource.error });
             }
@@ -135,9 +133,7 @@ const setStatusProvider = async (req: Request, res: Response, next: NextFunction
 
         let balance = null;
         if (req.body.status == 'Complete') {
-            console.log('Inside Complete');
             balance = await ProviderBalance.getBalanceByEmail(provider);
-            console.log('balance', balance);
             if (!balance) {
                 return res.status(400).json({ message: `Provider Balance not found1.` });
             }
@@ -311,7 +307,6 @@ const getRemittancePrice = async (req: Request, res: Response, next: NextFunctio
         const remmitance_currency: string = req.body.remmitance_currency;
 
         const remittance_prices = await getPrices(email, budget, budget_currency, remmitance_currency);
-        console.log(remittance_prices);
 
         res.status(200).json({ remittance_prices });
     } catch (error) {

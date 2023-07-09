@@ -21,8 +21,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             return res.status(404).json({ error: 'Balance does not exist' });
         }
         balanceData = {
-            local_balance: balance.balance_uyu.toFixed(2),
-            ext_balance: balance.balance_usd.toFixed(2),
+            local_balance: balance.balance_uyu.toFixed(),
+            ext_balance: balance.balance_usd.toFixed(),
             local_currency: 'UYU',
             ext_currency: 'USD',
             operational_price: balance.operational_price,
@@ -55,8 +55,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             return res.status(404).json({ error: 'Balance does not exist' });
         }
         balanceData = {
-            local_balance: balance.balance_cup,
-            ext_balance: balance.balance_mlc,
+            local_balance: balance.balance_cup.toFixed(),
+            ext_balance: balance.balance_mlc.toFixed(),
             local_currency: 'CUP',
             ext_currency: 'MLC',
             operational_price: balance.operational_price,
@@ -83,8 +83,6 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             }
         });
     }
-
-    console.log(remittanceByStatus);
 
     let remittanceData = remittanceByStatus as Array<{ count: number; state: string }>;
     let fails = 0;

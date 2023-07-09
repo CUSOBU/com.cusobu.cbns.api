@@ -59,12 +59,10 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
         if (budget_currency === 'MLC') {
             balance.balance_mlc += budget;
         } else if (budget_currency === 'CUP') {
-            balance.balance_cup += budget*balance.operational_price;
+            balance.balance_cup += budget * balance.operational_price;
         } else {
             return { status: 400, error: 'Invalid currency' };
         }
-
-        balance.last_update = new Date();
 
         balance = await balance.save();
 
@@ -85,8 +83,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getBalanceByEmail = async (email: string) => {
-        let balance = await ProviderBalance.findOne({ email: email });
-        return balance;
+    let balance = await ProviderBalance.findOne({ email: email });
+    return balance;
 };
 
 export default {
