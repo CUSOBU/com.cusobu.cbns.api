@@ -27,7 +27,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             ext_currency: 'USD',
             operational_price: balance.operational_price,
             customer_price: balance.customer_price,
-            operational_limit: balance.operational_limit
+            operational_limit: balance.operational_limit,
+            last_update: balance.last_update
         };
 
         //Remittances Data
