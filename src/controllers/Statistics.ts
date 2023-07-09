@@ -87,8 +87,10 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
     });
   }
 
-  let remittanceData =
-    (remittanceByStatus as Array<{ count: number; state: string }>) ?? [];
+  let remittanceData = remittanceByStatus as Array<{
+    count: number;
+    state: string;
+  }>;
   let fails = 0;
   let total = 0;
   let pending = 0;
@@ -116,19 +118,17 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
     }
   });
 
-  return res
-    .status(200)
-    .json({
-      message: "OK",
-      balanceData,
-      remittancesDates,
-      remittanceByStatus: {
-        total: total,
-        processing: pending,
-        complete: completed,
-        cancel: fails
-      }
-    });
+  return res.status(200).json({
+    message: "OK",
+    balanceData,
+    remittancesDates,
+    remittanceByStatus: {
+      total: total,
+      processing: pending,
+      complete: completed,
+      cancel: fails
+    }
+  });
 };
 
 export default {
