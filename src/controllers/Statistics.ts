@@ -23,7 +23,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             return res.status(404).json({ error: 'Balance does not exist' });
         }
         balanceData = {
-            local_balance: balance.balance_uyu,
+            local_balance: balance.balance_uyu.toFixed(2),
             ext_balance: balance.balance_usd,
             local_currency: 'UYU',
             ext_currency: 'USD',
