@@ -92,7 +92,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
     let total = 0;
     let pending = 0;
     let completed = 0;
-    if (remittancesDates? && remittanceData.length > 0) {
+    if (remittancesDates && remittanceData.length > 0) {
         remittanceData.forEach((remittance) => {
             switch (remittance.state) {
                 case 'Cancel':
