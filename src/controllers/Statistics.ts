@@ -29,14 +29,22 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             customer_price: balance.customer_price,
             operational_limit: balance.operational_limit,
             last_update: balance.last_update,
-            UYU_EXCHANGE: config.UYU_EXCHANGE
+            EXCHANGE: config.UYU_EXCHANGE
         };
 
         //Remittances Data
         remittancesDates = await serviceRemittances.getRemittancesByDate({
             email: email,
             createdAt: {
-                $gte: balance.last_update, // Mayor o igual que startDate
+                $gte: new Date(balance.last_update), // Mayor o igual que startDate
+                $lte: new Date() // Menor o igual que endDate
+            }
+        });
+
+        remittanceByStatus = await serviceRemittances.getRemittancesByStatus({
+            email: email,
+            createdAt: {
+                $gte: new Date(balance.last_update), // Mayor o igual que startDate
                 $lte: new Date() // Menor o igual que endDate
             }
         });
@@ -55,7 +63,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             customer_price: balance.operational_price,
             operational_limit: balance.operational_limit,
             last_update: balance.last_update,
-            UYU_EXCHANGE: config.UYU_EXCHANGE
+            EXCHANGE: config.UYU_EXCHANGE
         };
 
         //Remittances Data
@@ -70,7 +78,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
         remittanceByStatus = await serviceRemittances.getRemittancesByStatus({
             provider: email,
             createdAt: {
-                $gte: balance.last_update, // Mayor o igual que startDate
+                $gte: new Date(balance.last_update), // Mayor o igual que startDate
                 $lte: new Date() // Menor o igual que endDate
             }
         });
