@@ -85,18 +85,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getBalanceByEmail = async (email: string) => {
-    try {
-        if (!email) {
-            return { status: 400, error: 'Missing parameters' };
-        }
         let balance = await ProviderBalance.findOne({ email: email });
-        if (!balance) {
-            return { status: 404, error: 'Balance does not exist' };
-        }
-        return { status: 200, balance: balance };
-    } catch (error) {
-        throw new Error(`An error getting the balance. ${error}`);
-    }
+        return balance;
 };
 
 export default {

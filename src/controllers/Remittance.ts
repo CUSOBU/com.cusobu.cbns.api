@@ -10,7 +10,6 @@ import { number } from 'joi';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        console.log('req.body', req.body);
         const { email = req.headers.email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency } = req.body;
 
         let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
@@ -19,7 +18,6 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
         const identifier = olderRemittance.length > 0 ? olderRemittance[0].identifier + 1 : 1;
 
         const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency);
-        console.log('remittancePrice', remittancePrice);
         const remittance_amount = remittancePrice.remittance_amount;
         const operation_cost = remittancePrice.operation_cost;
 
@@ -140,8 +138,8 @@ const setStatusProvider = async (req: Request, res: Response, next: NextFunction
             console.log('Inside Complete');
             balance = await ProviderBalance.getBalanceByEmail(provider);
             console.log('balance', balance);
-            if (!balance || balance.error) {
-                return res.status(400).json({ message: `Provider Balance not found1. ${balance.error}` });
+            if (!balance) {
+                return res.status(400).json({ message: `Provider Balance not found1.` });
             }
             let balanceResponse = await ProviderBalance.addBudget(provider, remittanceDB.remittance_amount, remittanceDB.remittance_currency);
             if (!balanceResponse || balanceResponse.error) {
