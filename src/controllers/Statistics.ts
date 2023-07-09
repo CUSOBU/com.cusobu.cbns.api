@@ -28,7 +28,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             operational_price: balance.operational_price,
             customer_price: balance.customer_price,
             operational_limit: balance.operational_limit,
-            last_update: balance.last_update
+            last_update: balance.last_update,
+            UYU_EXCHANGE: config.UYU_EXCHANGE
         };
 
         //Remittances Data
@@ -53,7 +54,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             operational_price: balance.operational_price,
             customer_price: balance.operational_price,
             operational_limit: balance.operational_limit,
-            last_update: balance.last_update
+            last_update: balance.last_update,
+            UYU_EXCHANGE: config.UYU_EXCHANGE
         };
 
         //Remittances Data
