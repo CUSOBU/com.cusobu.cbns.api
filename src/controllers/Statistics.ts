@@ -13,8 +13,6 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
     const role = req.headers.role;
     if (!email || !role) return res.status(400).json({ error: 'Email is required' });
 
-    console.log('console', email, role);
-
     let balance = null; //await balanceController.getBalanceByEmail(email);
 
     if (role === 'seller') {
@@ -24,7 +22,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
         }
         balanceData = {
             local_balance: balance.balance_uyu.toFixed(2),
-            ext_balance: balance.balance_usd,
+            ext_balance: balance.balance_usd.toFixed(2),
             local_currency: 'UYU',
             ext_currency: 'USD',
             operational_price: balance.operational_price,
@@ -53,7 +51,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
             ext_currency: 'MLC',
             operational_price: balance.operational_price,
             customer_price: balance.operational_price,
-            operational_limit: balance.operational_limit
+            operational_limit: balance.operational_limit,
+            last_update: balance.last_update
         };
 
         //Remittances Data

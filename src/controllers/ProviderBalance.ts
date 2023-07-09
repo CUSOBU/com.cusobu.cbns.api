@@ -59,7 +59,7 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
         if (budget_currency === 'MLC') {
             balance.balance_mlc += budget;
         } else if (budget_currency === 'CUP') {
-            balance.balance_cup += budget;
+            balance.balance_cup += budget*balance.operational_price;
         } else {
             return { status: 400, error: 'Invalid currency' };
         }
