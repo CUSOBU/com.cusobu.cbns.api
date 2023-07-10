@@ -1,9 +1,7 @@
 import { config } from "./../config/config";
 import { Response, Request, NextFunction } from "express";
-import Remittance, { IRemittance } from "../models/Remittance";
-import RemittanceController from "../controllers/Remittance";
+import Remittance from "../models/Remittance";
 import axios from "axios";
-import { config } from "../config/config";
 import codificator from "../common/Codification";
 import Balance from "../controllers/Balance";
 
