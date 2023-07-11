@@ -27,7 +27,6 @@ export const Schemas = {
             email: joi.string().required().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'uy'] }}),
             password: joi.string().required(),
             role: joi.string().default('seller'),
-            user: joi.string().required(),
         }),
         update: joi.object<IUser>({
             name: joi.string().required(),

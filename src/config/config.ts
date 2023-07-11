@@ -13,8 +13,8 @@ const WALAK_API_URL =
 const WALAK_API_KEY =
   process.env.WALAK_API_KEY ||
   "yVasDgAmcnbkiquign0XdvrehxdAPhPPf6R5jC9M8tDbN8B0PmOamVV7x7OnUGBgkC1c0+wIsd1r6UJk7+L54oXH6OXay1maBimxOs4oQz3mNNn4McKIr9VX6H64Y1dNKQ4WpA==";
-const UYU_EXCHANGE = process.env.UYU_EXCHANGE || 40;
-const CUP_EXCHANGE = process.env.CUP_EXCHANGE || 185;
+const UYU_EXCHANGE = process.env.UYU_EXCHANGE || 39;
+const CUP_EXCHANGE = process.env.CUP_EXCHANGE || 190;
 
 const SERVER_PORT = process.env.SERVER_PORT
   ? Number(process.env.SERVER_PORT)

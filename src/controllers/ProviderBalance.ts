@@ -61,18 +61,18 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
         } else if (budget_currency === 'CUP') {
             balance.balance_cup += budget * balance.operational_price;
         } else {
-            return { status: 400, error: 'Invalid currency' };
+            throw new Error('Invalid currency');
+        }
+
+        if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / config.CUP_EXCHANGE) {
+           throw new Error('Budget exceeds operational limit');
         }
 
         balance = await balance.save();
-
-        if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / config.CUP_EXCHANGE) {
-            return { status: 400, warning: 'Operational limit exceeded', balance: balance };
-        }
-
         return { status: 200, balance: balance };
+
     } catch (error) {
-        return { status: 500, error: `An error occurred while adding the budget. ${error}` };
+        throw error;
     }
 };
 

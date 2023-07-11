@@ -23,9 +23,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
 
         let remittance = new Remittance({});
 
-        if (remittance_currency == 'CUP') {
-            //Poner remittance CUP
-            remittance = new Remittance({
+        remittance = new Remittance({
                 identifier,
                 email,
                 full_name,
@@ -37,48 +35,10 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
                 operation_cost,
                 budget_currency,
                 status: 'Pending',
-                statusCode: 0
+                statusCode: 0,
+                webhook: config.URL + '/hook/mlc/' + identifier + '-' + encryptedCard
+
             });
-        } else if (remittance_currency == 'MLC') {
-            // Remittance MLC (WALAK)
-            const webhook = config.URL + '/walak/mlc/' + identifier + '-' + encryptedCard;
-            let remittanceWalak = { email, cardNumber, full_name, phone_number, remittance_amount, webhook };
-            let responseSource = null;
-
-            if (remittance_amount < 100) {
-                return res.status(400).json({ error: 'El monto minimo es 100' });
-            }
-
-            try {
-                responseSource = await walak.postRemittance(remittanceWalak);
-            } catch (walakError) {
-                console.log('walakError', walakError);
-                throw new Error(`Error creating remittance ${walakError} ${responseSource.data}`);
-            }
-
-            if (!responseSource || responseSource.error) {
-                return res.status(400).json({ error: 'Error creating remittance ' + responseSource.error });
-            }
-
-            remittance = new Remittance({
-                identifier,
-                email: email,
-                full_name,
-                phone_number,
-                cardNumber: encryptedCard,
-                remittance_amount: remittance_amount,
-                remittance_currency,
-                budget_amount,
-                operation_cost,
-                budget_currency,
-                source_reference: responseSource['id'],
-                status: responseSource['status'],
-                statusCode: responseSource['statusCode'],
-                webhook: webhook
-            });
-        } else {
-            res.status(400).json({ error: 'Currency is not valid' });
-        }
 
         await Balance.addBudget(email, operation_cost, budget_currency);
 
@@ -158,7 +118,6 @@ const setStatusProvider = async (req: Request, res: Response, next: NextFunction
                 res.status(200).json({ remittance });
             })
             .catch((error) => {
-                Balance.addBudget(provider, remittanceDB.remittance_amount * -1, remittanceDB.budget_currency);
                 res.status(400).json({ error });
             });
     } catch (error) {
@@ -246,12 +205,14 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
         if (phone_number) {
             filter['phone_number'] = phone_number; // Estado del proceso
         }
+        console.log('role:', role);
+        
         if (role && role == 'seller') {
             filter['email'] = email;
         } else if (role && role == 'provider') {
             filter['provider'] = { $in: [email, '', null] };
-            filter['remittance_currency'] = 'CUP';
         }
+        console.log('filter:', filter);
 
         // get documents count
         const totalDocuments = await Remittance.countDocuments(filter);
