@@ -68,8 +68,6 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
             return { status: 400, error: 'Invalid currency' };
         }
     
-        balance.last_update = new Date();
-    
         balance = await balance.save();
 
         if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / config.UYU_EXCHANGE) {

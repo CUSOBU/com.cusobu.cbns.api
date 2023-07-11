@@ -59,22 +59,20 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
         if (budget_currency === 'MLC') {
             balance.balance_mlc += budget;
         } else if (budget_currency === 'CUP') {
-            balance.balance_cup += budget;
+            balance.balance_cup += budget * balance.operational_price;
         } else {
-            return { status: 400, error: 'Invalid currency' };
+            throw new Error('Invalid currency');
         }
-
-        balance.last_update = new Date();
-
-        balance = await balance.save();
 
         if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / config.CUP_EXCHANGE) {
-            return { status: 400, warning: 'Operational limit exceeded', balance: balance };
+           throw new Error('Budget exceeds operational limit');
         }
 
+        balance = await balance.save();
         return { status: 200, balance: balance };
+
     } catch (error) {
-        return { status: 500, error: `An error occurred while adding the budget. ${error}` };
+        throw error;
     }
 };
 
@@ -85,18 +83,8 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getBalanceByEmail = async (email: string) => {
-    try {
-        if (!email) {
-            return { status: 400, error: 'Missing parameters' };
-        }
-        let balance = await ProviderBalance.findOne({ email: email });
-        if (!balance) {
-            return { status: 404, error: 'Balance does not exist' };
-        }
-        return { status: 200, balance: balance };
-    } catch (error) {
-        throw new Error(`An error getting the balance. ${error}`);
-    }
+    let balance = await ProviderBalance.findOne({ email: email });
+    return balance;
 };
 
 export default {

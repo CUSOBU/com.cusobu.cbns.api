@@ -5,7 +5,7 @@ import { verifyJWT, authorizeRole } from '../middleware/AuthMiddleware';
 
 const router = Router();
 
-router.post('/', verifyJWT, ValidateSchema(Schemas.user.create), controller.create);
+router.post('/', verifyJWT, authorizeRole(["admin"]), ValidateSchema(Schemas.user.create), controller.create);
 router.get('/:email',  verifyJWT, authorizeRole(["admin"]), controller.getOne);
 
 router.patch('/:email', verifyJWT, authorizeRole(["admin"]), ValidateSchema(Schemas.user.update), controller.update);

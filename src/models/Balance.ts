@@ -20,7 +20,7 @@ const BalanceSchema: Schema = new Schema(
         operational_limit: { type: Number, required: true, default: 0 },
         pre_paid: { type: Boolean, required: true, default: false },
         allow_overlimit: { type: Boolean, required: true, default: false },
-        last_update: { type: Date, required: true, default: Date.now }
+        last_update: { type: Date }
     },
     schemaOptions
 );

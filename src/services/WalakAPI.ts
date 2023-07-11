@@ -10,7 +10,6 @@ const WALAK_API_URL = 'https://api.dev.walak.app/api/mlc';
 const WALAK_API_KEY = 'yVasDgAmcnbkiquign0XdvrehxdAPhPPf6R5jC9M8tDbN8B0PmOamVV7x7OnUGBgkC1c0+wIsd1r6UJk7+L54oXH6OXay1maBimxOs4oQz3mNNn4McKIr9VX6H64Y1dNKQ4WpA==';
 
 const updateStatusNotification = async (req: Request, res: Response, next: NextFunction) => {
-    console.log('updateStatusNotification');
     try {
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({ message: 'Request body must not be empty' });
