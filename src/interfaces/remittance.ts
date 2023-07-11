@@ -1,12 +1,18 @@
 export default interface IRemittance {
-    user_email: string;
-    cardNumber: string;
+    email: string;
     full_name: string;
     phone_number: string;
-    amount: number;
-    currency: string;
-    budget: number;
+    cardNumber: string;
+    remittance_amount: number;
+    remittance_currency: string;
+    budget_amount: number;
+    operation_cost: number;
     budget_currency: string;
     source_reference: string;
-    process_status: string;
+    status: string;
+    statusCode: string;
+    webhook: string;
+    evidence: string;
+    details: string;
+    provider: string;
 }

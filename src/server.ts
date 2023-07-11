@@ -5,8 +5,20 @@ import { config } from './config/config';
 import Logging from './library/Logging';
 import userRoutes from './routes/User';
 import remittanceRoutes from './routes/Remittance';
+import walakRoutes from './routes/Walak';
+import balanceRoutes from './routes/Balance';
+import authRoutes from './routes/auth';
+import statisticsRoutes from './routes/Statistics';
+import ProviderBalanceRoutes from './routes/ProviderBalance';
+import passportStrategy from './config/passport';
+import passport from 'passport';
+
+
 
 const app: Application = express();
+
+passportStrategy(passport);
+// app.use(passport.initialize());
 
 /**
  * Mongo connect
@@ -81,12 +93,17 @@ const StartServer = () => {
     });
 
     /** Routes */
-
     app.use('/users', userRoutes);
     app.use('/remittances', remittanceRoutes);
+    app.use('/walak', walakRoutes);
+    app.use('/balances', balanceRoutes);
+    app.use('/providerbalances', ProviderBalanceRoutes);
+    app.use('/', authRoutes);
+    app.use('/login', authRoutes);
+    app.use('/statistics', statisticsRoutes);
 
     /** HealthCheck */
-    app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK' }));
+    app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK :)' }));
 
     /** Error handling */
     app.use((req: Request, res: Response, next: NextFunction) => {

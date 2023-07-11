@@ -1,226 +1,313 @@
-import { Response, Request, NextFunction } from 'express';
+import e, { Response, Request, NextFunction } from 'express';
 import Remittance, { IRemittance } from '../models/Remittance';
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
-import fetch from 'node-fetch';
-import axios from 'axios';
-
-const WALAK_API_KEY = "sV4ZIyQgCehXciZibLcTqKH7Fuzq1tpBMuZLT+2CwUJIJMe+eZUsODwc3tQAloWx0OzoHR9F4JHrxIyGps0MWk7XdPgdYwjqcpWKdYMrv03QANgcuH2LFQddoe7H6th+dItg=="
-const WALAK_API_URL = "https://api.dev.walak.app/api/mlc"
-
-const algorithm = 'aes-256-cbc';
-const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3'; // Recuerda cambiar esto por tu propia clave secreta
-const iv = crypto.randomBytes(16); // IV debe ser de 16 bytes
-
-const saltRounds = 10;
-const ITEMS_PER_PAGE = 20;
+import { config } from '../config/config';
+import walak from '../services/WalakAPI';
+import codificator from '../common/Codification';
+import Balance from './Balance';
+import ProviderBalance from './ProviderBalance';
+import { IUserBalance } from '@src/models/Balance';
+import { number } from 'joi';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-    const identifier = await Remittance.countDocuments()+1
-    const {user_email, cardNumber, full_name, phone_number, amount, currency, budget, budget_currency} = req.body;
-    let encryptedCard = encrypt(cardNumber); // encriptar la tarjeta
-
-    let remittanceData = { identifier, user_email, cardNumber, full_name, phone_number, amount, currency, budget, budget_currency };
-
-/*     let responseSource = postRemittanceToSource(remittanceData);
-    console.log(responseSource); */
-
-    // let remittance = new Remittance({ identifier, user_email, card: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency, process_status: (await responseSource).data.id, source_reference: (await responseSource).data.id });
-    let remittance = new Remittance({ identifier, user_email, cardNumber: encryptedCard, full_name, phone_number, amount, currency, budget, budget_currency});
-
-    return remittance
-        .save()
-        .then((remittance: IRemittance) => res.status(201).json({ remittance }))
-        .catch((error) => res.status(500).json({ error }));
-};
-
-const postRemittanceToSource = async (data: any) => {
-
-    let remittanceData:any = {};
-    remittanceData.cardNumber = data.cardNumber ;
-    remittanceData.amount = data.amount;
-    remittanceData.senderName = data.full_name;
-    remittanceData.phoneNumber = data.phone_number;
-
     try {
-        const response = await axios.post(WALAK_API_URL, remittanceData, {
-            headers: { 'Authorization': `Bearer ${WALAK_API_KEY}` }
-        });
+        const { email = req.headers.email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency } = req.body;
 
-        if (response.status !== 200) {
-            throw new Error('Failed to register remittance with other API');
-        }
+        let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
 
-        console.log(`Created object id: ${response.data.id}`); // Log the created object id
+        const olderRemittance: any = await Remittance.find().sort({ identifier: -1 }).limit(1);
+        const identifier = olderRemittance.length > 0 ? olderRemittance[0].identifier + 1 : 1;
 
-        // If the request was successful, you could return the response from the other API
-        // Or you could just return your own response
-        return response.data;
+        const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency);
+        const remittance_amount = remittancePrice.remittance_amount;
+        const operation_cost = remittancePrice.operation_cost;
+
+        let remittance = new Remittance({});
+
+        remittance = new Remittance({
+                identifier,
+                email,
+                full_name,
+                phone_number,
+                cardNumber: encryptedCard,
+                remittance_amount: remittance_amount,
+                remittance_currency,
+                budget_amount,
+                operation_cost,
+                budget_currency,
+                status: 'Pending',
+                statusCode: 0,
+                webhook: config.URL + '/hook/mlc/' + identifier + '-' + encryptedCard
+
+            });
+
+        await Balance.addBudget(email, operation_cost, budget_currency);
+
+        return remittance
+            .save()
+            .then((remittance: IRemittance) => res.status(201).json({ remittance }))
+            .catch((error) => {
+                res.status(400).json({ error });
+            });
     } catch (error) {
-        console.error(error);
-        throw error;
+        return res.status(400).json({ error });
     }
-    
 };
 
 const update = (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (Object.keys(req.body).length === 0) {
+            return res.status(400).json({ message: 'Request body must not be empty' });
+        }
+        const remittanceId = req.params.id;
 
-    if (Object.keys(req.body).length === 0) {
-        return res.status(400).json({ message: 'Request body must not be empty' });
+        let remittance = req.body;
+        delete remittance.email;
+
+        return Remittance.findOneAndUpdate({ identifier: remittanceId }, remittance)
+            .then((remittance) => (remittance ? res.status(200).json({ remittance }) : res.status(404).json({ message: 'Not found' })))
+            .catch((error) => res.status(400).json({ error }));
+    } catch (error) {
+        return res.status(400).json({ error });
     }
-    const remittanceId = req.params.id;
-    
-    return Remittance.findOneAndUpdate({ identifier: remittanceId }, req.body)
-        .then((remittance) => (remittance ? res.status(200).json({ remittance }) : res.status(404).json({ message: 'Not found' })))
-        .catch((error) => res.status(500).json({ error }));
 };
 
-const search = async (req: Request, res: Response, next: NextFunction) => {
-    let { page = 1, pageSize = 20, process_status } = req.query;
-    page = Number(page);
-    pageSize = Number(pageSize);
+const setStatusProvider = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (Object.keys(req.body).length === 0) {
+            return res.status(400).json({ message: 'Request body must not be empty' });
+        }
 
-    // Asegurarse de que page y pageSize sean números. Si no, establecer a los valores predeterminados.
-    if (isNaN(page) || page <= 0) {
-        page = 1;
-    }
-    if (isNaN(pageSize) || pageSize <= 0) {
-        pageSize = 20;
-    }
+        const provider = req.headers.email?.toString();
+        const remittanceId = req.params.id;
 
-    const query = process_status ? { process_status } : {}; // Si status está definido, incluirlo en el query
+        if (!provider || remittanceId == null) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
 
-    // Obtén el total de documentos
-    const totalDocuments = await Remittance.countDocuments(query);
+        let remittance = { provider: provider, status: req.body.status, statusCode: req.body.statusCode, evidence: req.body.evidence };
 
-    Remittance.find(query)
-        .skip((page - 1) * pageSize)
-        .limit(pageSize)
-        .then((remittances) => {
-            remittances = remittances.map(remittance => {
-                remittance.cardNumber = decrypt(remittance.cardNumber); // desencriptar la tarjeta
-                return remittance;
+        let remittanceDB: any = await Remittance.findOne({ identifier: remittanceId });
+        if (!remittanceDB) {
+            return res.status(404).json({ message: 'Not found' });
+        }
+
+        let balance = null;
+        if (req.body.status == 'Complete') {
+            balance = await ProviderBalance.getBalanceByEmail(provider);
+            if (!balance) {
+                return res.status(400).json({ message: `Provider Balance not found1.` });
+            }
+            let balanceResponse = await ProviderBalance.addBudget(provider, remittanceDB.remittance_amount, remittanceDB.remittance_currency);
+            if (!balanceResponse || balanceResponse.error) {
+                return res.status(400).json({ message: `Provider Balance not found2. ${balanceResponse.error}` });
+            }
+        } else if (req.body.status == 'Cancel') {
+            balance = await Balance.getBalanceByEmail(remittanceDB.email);
+            if (!balance) {
+                return res.status(400).json({ message: 'Balance not found' });
+            }
+            let balanceResponse = await Balance.addBudget(remittanceDB.email, remittanceDB.operation_cost * -1, remittanceDB.budget_currency);
+            if (!balanceResponse || balanceResponse.error) {
+                return res.status(400).json({ message: `Provider Balance not found3. ${balanceResponse.error}` });
+            }
+        }
+
+        return Remittance.findOneAndUpdate({ identifier: remittanceId }, remittance)
+            .then(async (remittance) => {
+                // Balance.addBudget(provider, remittance.remittance_amount * balance.operational_price, remittance.budget_currency);
+                res.status(200).json({ remittance });
+            })
+            .catch((error) => {
+                res.status(400).json({ error });
             });
-
-            // Calcular el total de páginas
-            const totalPages = Math.ceil(Number(totalDocuments) / Number(pageSize));
-
-            res.status(200).json({ 
-                totalDocuments,
-                totalPages,
-                currentPage: page,
-                remittances
-            });
-        })
-        .catch((error) => res.status(500).json({ error }));
+    } catch (error) {
+        return res.status(400).json({ error });
+    }
 };
 
 const filter = async (req: Request, res: Response, next: NextFunction) => {
-    let { process_status, startDate, endDate, currency, budget_currency, phone_number, source_reference } = req.body;
-    let { page = 1, pageSize = 20 } = req.query;
+    try {
+        let { email, status, startDate, endDate, currency, budget_currency, phone_number, source_reference } = req.body;
+        let { page = 1, pageSize = 20 } = req.query;
 
-    let localDate = new Date(startDate);  // Convert string to Date object
-    startDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 0, 0, 0));  // Convert to UTC
+        if (!email) {
+            email = req.headers.email;
+        }
 
-    localDate = new Date(endDate);  // Convert string to Date object
-    endDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 23, 59, 59));  // Convert to UTC
+        page = Number(page);
+        pageSize = Number(pageSize);
 
-    page = Number(page);
-    pageSize = Number(pageSize);
+        const role = req.headers.role;
 
-    // Asegurarse de que page y pageSize sean números. Si no, establecer a los valores predeterminados.
-    if (isNaN(page) || page <= 0) {
-        page = 1;
-    }
-    if (isNaN(pageSize) || pageSize <= 0) {
-        pageSize = 20;
-    }
+        // set default values to page and pageSize if they are not numbers
+        if (isNaN(page) || page <= 0) {
+            page = 1;
+        }
+        if (isNaN(pageSize) || pageSize <= 0) {
+            pageSize = 20;
+        }
 
-    // Crea el objeto de filtro
-    let filter: any = {};
-    if (process_status) {
-        filter['process_status'] = process_status; // Estado del proceso
-    }
-    if (startDate && endDate) {
+        // Create filter
+        let filter: any = {};
+
+        //Prepare Dates
+
+        let currentDate = new Date();
+        let startOfWeek = new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - currentDate.getDay(), 0, 0, 0)); // Primer día de la semana (domingo)
+        let endOfWeek = new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - currentDate.getDay() + 6, 23, 59, 59)); // Último día de la semana (sábado)
+
+        // ELIMINAR
+        let startOfYear = new Date(Date.UTC(currentDate.getFullYear(), 0, 1, 0, 0, 0)); // Fecha inicial del año
+        startOfWeek = startOfYear;
+
+        if (startDate) {
+            // Verify startDate & endDate
+            if (!Date.parse(startDate)) {
+                return res.status(400).json({ error: 'Invalid startDate' });
+            } else {
+                let localDate = new Date(startDate); // Convert string to Date object
+                startDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 0, 0, 0)); // Convert to UTC
+            }
+        } else {
+            startDate = startOfWeek;
+        }
+        if (endDate) {
+            if (!Date.parse(endDate)) {
+                return res.status(400).json({ error: 'Invalid status' });
+            } else {
+                let localDate = new Date(endDate); // Convert string to Date object
+                endDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 23, 59, 59)); // Convert to UTC
+            }
+        } else {
+            endDate = endOfWeek;
+        }
+
         filter['createdAt'] = {
             $gte: new Date(startDate), // Mayor o igual que startDate
             $lte: new Date(endDate) // Menor o igual que endDate
         };
-    }
-    if (currency) {
-        filter['currency'] = currency; // Estado del proceso
-    }
-    if (budget_currency) {
-        filter['budget_currency'] = budget_currency; // Estado del proceso
-    }
-    if (source_reference) {
-        filter['source_reference'] = source_reference; // Estado del proceso
-    }
-    if (phone_number) {
-        filter['phone_number'] = phone_number; // Estado del proceso
-    }
-    // Obtén el total de documentos
-    const totalDocuments = await Remittance.countDocuments(filter);
 
-    Remittance.find(filter)
-        .skip((page - 1) * pageSize)
-        .limit(pageSize)
-        .then((remittances) => {
-            remittances = remittances.map(remittance => {
-                remittance.cardNumber = decrypt(remittance.cardNumber); // desencriptar la tarjeta
-                return remittance;
-            });
+        if (status) {
+            if (!Array.isArray(status)) {
+                status = [status];
+            }
+            filter['status'] = { $in: status };
+        }
+        if (currency) {
+            filter['currency'] = currency; // Estado del proceso
+        }
+        if (budget_currency) {
+            filter['budget_currency'] = budget_currency; // Estado del proceso
+        }
+        if (source_reference) {
+            filter['source_reference'] = source_reference; // Estado del proceso
+        }
+        if (phone_number) {
+            filter['phone_number'] = phone_number; // Estado del proceso
+        }
+        console.log('role:', role);
+        
+        if (role && role == 'seller') {
+            filter['email'] = email;
+        } else if (role && role == 'provider') {
+            filter['provider'] = { $in: [email, '', null] };
+        }
+        console.log('filter:', filter);
 
-            // Calcular el total de páginas
-            const totalPages = Math.ceil(Number(totalDocuments) / Number(pageSize));
+        // get documents count
+        const totalDocuments = await Remittance.countDocuments(filter);
 
-            res.status(200).json({ 
-                totalDocuments,
-                totalPages,
-                currentPage: page,
-                remittances
-            });
-        })
-        .catch((error) => res.status(500).json({ error }));
+        // get remittances
+        Remittance.find(filter)
+            .skip((page - 1) * pageSize)
+            .limit(pageSize)
+            .then((remittances) => {
+                remittances = remittances.map((remittance) => {
+                    remittance.cardNumber = codificator.decrypt(remittance.cardNumber); // desencriptar la tarjeta
+                    return remittance;
+                });
+
+                // Calcular el total de páginas
+                const totalPages = Math.ceil(Number(totalDocuments) / Number(pageSize));
+
+                res.status(200).json({
+                    totalDocuments,
+                    totalPages,
+                    currentPage: page,
+                    remittances
+                });
+            })
+            .catch((error) => res.status(400).json({ error }));
+    } catch (error) {
+        return res.status(400).json({ error });
+    }
 };
 
 const getOne = (req: Request, res: Response, next: NextFunction) => {
     const remittanceId = req.params.id;
 
-    Remittance.findOne({ identifier: remittanceId })
-        .then((remmitances) => {
-            if (remmitances) {
-                remmitances.cardNumber = decrypt(remmitances.cardNumber); // desencriptar la tarjeta
-                res.status(200).json({ remmitances });
-            } else {
-                res.status(404).json({ message: 'Not found' });
-            }
-        })
+    if (!remittanceId) {
+        return res.status(400).json({ error: 'Invalid remittance Ientifierd' });
+    }
 
-}
+    Remittance.findOne({ identifier: remittanceId }).then((remmitances) => {
+        if (remmitances) {
+            remmitances.cardNumber = codificator.decrypt(remmitances.cardNumber); // desencriptar la tarjeta
+            res.status(200).json({ remmitances });
+        } else {
+            res.status(404).json({ message: 'Not found' });
+        }
+    });
+};
+
+const getRemittancePrice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const email: string = req.headers.email ? req.headers.email.toString() : '';
+        const budget = Number(req.body.budget);
+        const budget_currency = req.body.budget_currency;
+        const remmitance_currency: string = req.body.remmitance_currency;
+
+        const remittance_prices = await getPrices(email, budget, budget_currency, remmitance_currency);
+
+        res.status(200).json({ remittance_prices });
+    } catch (error) {
+        return res.status(400).json({ error });
+    }
+};
+
+const getPrices = async (email: string, budget_amount: number, budget_currency: string, remmitance_currency: string) => {
+    try {
+        let balance = await Balance.getBalanceByEmail(email);
+        if (!balance) {
+            throw new Error('Balance not found');
+        }
+
+        const operational_price: number = balance.operational_price;
+        const customer_price: number = balance.customer_price;
+
+        let remittance_amount = (budget_amount * 1) / customer_price;
+        let operation_cost = remittance_amount * operational_price;
+
+        if (budget_currency == 'UYU') {
+            remittance_amount = remittance_amount / Number(config.UYU_EXCHANGE);
+        }
+        if (remmitance_currency == 'CUP') {
+            remittance_amount = remittance_amount * Number(config.CUP_EXCHANGE);
+        }
+
+        const remittance_prices = { budget_amount: Number(budget_amount), remittance_amount: Math.round(Number(remittance_amount)), operation_cost: Number(operation_cost) };
+
+        return remittance_prices;
+    } catch (error) {
+        throw error;
+    }
+};
 
 export default {
     create,
     update,
-    search,
     filter,
-    getOne
-};
-
-// Encriptar y desencriptar txt
-const encrypt = (text: string) => {
-    const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
-
-    const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
-
-    return `${iv.toString('hex')}:${encrypted.toString('hex')}`;
-};
-
-const decrypt = (encryptedText:string) => {
-    let [iv, encrypted] = encryptedText.split(':');
-    const decipher = crypto.createDecipheriv(algorithm, secretKey, Buffer.from(iv, 'hex'));
-
-    const decrypted = Buffer.concat([decipher.update(Buffer.from(encrypted, 'hex')), decipher.final()]);
-
-    return decrypted.toString();
+    getOne,
+    getRemittancePrice,
+    setStatusProvider
 };
