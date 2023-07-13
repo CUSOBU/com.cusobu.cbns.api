@@ -49,7 +49,8 @@ export const Schemas = {
            statusCode: joi.number().default(0),
            webhook: joi.string(),
            evidence: joi.string(),
-           details: joi.string()
+           details: joi.string(),
+           remittance_rate: joi.number(),
             
         }),
         update: joi.object<IRemittance>({

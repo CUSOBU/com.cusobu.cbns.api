@@ -10,14 +10,15 @@ import { number } from 'joi';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { email = req.headers.email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency } = req.body;
+        const { email = req.headers.email, full_name, phone_number, cardNumber, remittance_currency, budget_amount, budget_currency,  remittance_rate=0} = req.body;
 
         let encryptedCard = codificator.encrypt(cardNumber); // encriptar la tarjeta
 
         const olderRemittance: any = await Remittance.find().sort({ identifier: -1 }).limit(1);
         const identifier = olderRemittance.length > 0 ? olderRemittance[0].identifier + 1 : 1;
 
-        const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency);
+
+        const remittancePrice = await getPrices(email, budget_amount, budget_currency, remittance_currency, remittance_rate);
         const remittance_amount = remittancePrice.remittance_amount;
         const operation_cost = remittancePrice.operation_cost;
 
@@ -266,8 +267,11 @@ const getRemittancePrice = async (req: Request, res: Response, next: NextFunctio
         const budget = Number(req.body.budget);
         const budget_currency = req.body.budget_currency;
         const remmitance_currency: string = req.body.remmitance_currency;
+        let remittance_rate = 0;
+        if(req.body.remittance_rate)
+            remittance_rate = Number(req.body.remittance_rate);
 
-        const remittance_prices = await getPrices(email, budget, budget_currency, remmitance_currency);
+        const remittance_prices = await getPrices(email, budget, budget_currency, remmitance_currency, remittance_rate);
 
         res.status(200).json({ remittance_prices });
     } catch (error) {
@@ -275,7 +279,7 @@ const getRemittancePrice = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-const getPrices = async (email: string, budget_amount: number, budget_currency: string, remmitance_currency: string) => {
+const getPrices = async (email: string, budget_amount: number, budget_currency: string, remmitance_currency: string, remittance_rate:number) => {
     try {
         let balance = await Balance.getBalanceByEmail(email);
         if (!balance) {
@@ -283,10 +287,14 @@ const getPrices = async (email: string, budget_amount: number, budget_currency: 
         }
 
         const operational_price: number = balance.operational_price;
-        const customer_price: number = balance.customer_price;
+        if(remittance_rate<operational_price && remittance_rate!=0){
+            throw new Error('Remittance rate is lower than operation cost');
+        }
+        const customer_price: number = remittance_rate!=0?remittance_rate:balance.customer_price;
+       
 
         let remittance_amount = (budget_amount * 1) / customer_price;
-        let operation_cost = remittance_amount * operational_price;
+        let operation_cost = ((budget_amount * 1) / operational_price).toFixed();
 
         if (budget_currency == 'UYU') {
             remittance_amount = remittance_amount / Number(config.UYU_EXCHANGE);
@@ -295,7 +303,8 @@ const getPrices = async (email: string, budget_amount: number, budget_currency: 
             remittance_amount = remittance_amount * Number(config.CUP_EXCHANGE);
         }
 
-        const remittance_prices = { budget_amount: Number(budget_amount), remittance_amount: Math.round(Number(remittance_amount)), operation_cost: Number(operation_cost) };
+        const remittance_prices = { budget_amount: Number(budget_amount), remittance_amount: Math.round(Number(remittance_amount)), 
+                operation_cost: Number(operation_cost), customer_price: Number(customer_price), operational_price: Number(operational_price) };
 
         return remittance_prices;
     } catch (error) {

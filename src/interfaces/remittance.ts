@@ -15,4 +15,5 @@ export default interface IRemittance {
     evidence: string;
     details: string;
     provider: string;
+    remittance_rate:number
 }
