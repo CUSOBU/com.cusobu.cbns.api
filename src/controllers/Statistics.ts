@@ -3,7 +3,7 @@ import { config } from "../config/config";
 import balanceController from "./Balance";
 import providerBalanceController from "./ProviderBalance";
 import serviceRemittances from "../services/Remittance";
-import Status from "@src/common/Status";
+import { Status } from "../common/Status";
 
 const getBalance = async (req: Request, res: Response, next: NextFunction) => {
   let balanceData = {};
