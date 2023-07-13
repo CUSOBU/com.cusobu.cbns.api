@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import IRemittance from "../interfaces/remittance";
-import Status from "@src/common/Status";
+import { Status } from "../common/Status";
 
 const schemaOptions = {
   timestamps: true, // assigns createdAt and updatedAt fields to the schema

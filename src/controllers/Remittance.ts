@@ -1,13 +1,10 @@
 import e, { Response, Request, NextFunction } from "express";
 import Remittance, { IRemittance } from "../models/Remittance";
 import { config } from "../config/config";
-import walak from "../services/WalakAPI";
 import codificator from "../common/Codification";
 import Balance from "./Balance";
 import ProviderBalance from "./ProviderBalance";
-import { IUserBalance } from "@src/models/Balance";
-import { number } from "joi";
-import Status from "@src/common/Status";
+import { Status } from "../common/Status";
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
   try {

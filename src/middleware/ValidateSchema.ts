@@ -3,10 +3,8 @@ import { Response, Request, NextFunction } from "express";
 import Logging from "../library/Logging";
 import IUser from "../interfaces/user";
 import IRemittance from "@src/interfaces/remittance";
-import { IRemittanceModel } from "@src/models/Remittance";
-import IBalance from "@src/interfaces/balance";
 import { IUserBalance } from "../models/Balance";
-import Status from "@src/common/Status";
+import { Status } from "../common/Status";
 
 export const ValidateSchema = (schema: ObjectSchema) => {
   return async (req: Request, res: Response, next: NextFunction) => {
