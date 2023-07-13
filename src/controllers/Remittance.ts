@@ -85,7 +85,7 @@ const setStatusProvider = async (req: Request, res: Response, next: NextFunction
             return res.status(400).json({ message: 'Email is required' });
         }
 
-        let remittance = { provider: provider, status: req.body.status, statusCode: req.body.statusCode, evidence: req.body.evidence };
+        let remittance = { provider: req.body.status != 'Pending'?provider:"", status: req.body.status, statusCode: req.body.statusCode, evidence: req.body.evidence };
 
         let remittanceDB: any = await Remittance.findOne({ identifier: remittanceId });
         if (!remittanceDB) {
