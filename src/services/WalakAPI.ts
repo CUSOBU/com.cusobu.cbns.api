@@ -60,7 +60,7 @@ const updateStatusNotification = async (
         }
         break;
       }
-      case "Complete": {
+      case Status.Complete: {
         if (
           remittance.status !== Status.Pending &&
           remittance.status !== Status.Delivery
@@ -79,7 +79,7 @@ const updateStatusNotification = async (
       return res.status(404).json({ message: "Not found" });
     }
 
-    if (req.body.status === "Cancel") {
+    if (req.body.status === Status.Cancel) {
       let balance = await Balance.getBalanceByEmail(remittanceDB.email);
       if (!balance) {
         console.log("Balance not found");
