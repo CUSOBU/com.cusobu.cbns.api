@@ -73,6 +73,7 @@ const deleteTopup = async (req: Request, res: Response, next: NextFunction) => {
             message: 'Missing required field "id"'
         });
     }
+     console.log("Deleting element", id);
     try {
         const responseService = await topupService.deleteTopup(id);
         if (!responseService) {
@@ -89,7 +90,7 @@ const deleteTopup = async (req: Request, res: Response, next: NextFunction) => {
     } catch (error) {
         return res.status(400).json({
             status: 'error',
-            message: 'Error retrieving topups'
+            message: `Error retrieving topups (${error})`
         });
     }
 };
@@ -111,9 +112,36 @@ const getTopups = async (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
+const getTopup = async (req: Request, res: Response, next: NextFunction) => {
+try {
+    const id = req.params.id;
+    if (!id) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required field "id"'
+        });
+    }
+    const responseService = await topupService.getTopup(id);
+
+    return res.status(200).json({
+        status: 'success',
+        message: 'Topup retrieved successfully',
+        data: responseService
+    });
+
+} catch (error) {
+    return res.status(400).json({
+        status: 'error',
+        message: 'Error retrieving topups'
+    });
+}
+
+};
+
 export default {
     create,
     patchTopup,
     deleteTopup,
-    getTopups
+    getTopups,
+    getTopup
 };

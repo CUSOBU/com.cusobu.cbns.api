@@ -6,8 +6,17 @@ import { post, route } from './User';
 const router = Router()
 
 router.post('/', verifyJWT, controller.create);
+router.patch('/:id', verifyJWT, controller.patchTopupOrder);
+router.delete('/:id', verifyJWT, controller.deleteTopupOrder);
+router.post('/filter', verifyJWT, controller.filter);
+
+router.post('/setstatus/:id', verifyJWT, controller.setStatus);
+
+router.get('/:id', verifyJWT, controller.getTopupOrder);
+
+
 // router.patch('/:id', verifyJWT, controller.patchTopup);
 // router.delete('/:id', verifyJWT, controller.deleteTopup);
-// router.get('/', verifyJWT, controller.getTopups);
+
 
 export = router;

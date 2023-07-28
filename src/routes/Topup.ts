@@ -8,10 +8,11 @@ import { post, route } from './User';
 const router = Router()
 
 router.post('/', verifyJWT, controller.create);
+
 router.patch('/:id', verifyJWT, controller.patchTopup);
 router.delete('/:id', verifyJWT, controller.deleteTopup);
-router.get('/', verifyJWT, controller.getTopups);
 
-router.post('/orders', verifyJWT, orderController.create);
+router.get('/:id', verifyJWT, controller.getTopup);
+router.get('/', verifyJWT, controller.getTopups);
 
 export = router;

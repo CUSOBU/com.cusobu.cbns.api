@@ -7,4 +7,6 @@ export default interface IProviderBalance {
     pre_paid: boolean;
     allow_overlimit: boolean;
     last_update: Date;
+    topups_rate: number;
+    topups_rate_type: string;
 }

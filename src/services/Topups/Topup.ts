@@ -65,6 +65,7 @@ const getTopups = async (page: Number, pageSize: Number) => {
 const getTopup = async (id: string) => {
     try {
         const topup = await Topup.findOne({ id });
+        console.log("topup: ", topup);
         if (!topup) {
             throw new Error('Topup not found');
         }
@@ -74,6 +75,7 @@ const getTopup = async (id: string) => {
         throw new Error('Error retrieving topup');
     }
 };
+
 
 export default {
     create,

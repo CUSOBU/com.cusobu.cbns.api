@@ -19,6 +19,7 @@ const TopupOrderSchema: Schema = new Schema(
             type: String,
             default: () => uuidv4()
         },
+        email: { type: String, required: true },
         topupId: { type: String, required: true },
         senderName: { type: String, required: true },
         phoneNumber: { type: String, required: true },

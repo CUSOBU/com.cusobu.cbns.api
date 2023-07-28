@@ -1,5 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import IProviderBalance from '../interfaces/provider_balance';
+import {Rate_Type} from '../common/Rate_Type'
+import { string } from 'joi';
 
 const schemaOptions = {
     timestamps: true, // assigns createdAt and updatedAt fields to the schema
@@ -19,7 +21,9 @@ const ProviderBalanceSchema: Schema = new Schema(
         operational_limit: { type: Number, required: true, default: 0 }, //operational limit = balance_mlc + balance_cup/exchange
         pre_paid: { type: Boolean, required: true, default: false },
         allow_overlimit: { type: Boolean, required: true, default: false },
-        last_update: { type: Date}
+        last_update: { type: Date},
+        topups_rate: { type: Number, required: true, default: 50},
+        topups_rate_type: { type: String, required: true, default: Rate_Type.Percent}
     },
     schemaOptions
 );

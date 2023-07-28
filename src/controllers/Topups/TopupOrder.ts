@@ -3,26 +3,34 @@ import topupOrderService from '../../services/Topups/TopupOrder';
 import Topup from '../../services/Topups/Topup';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
-    
     try {
-    const { topupId, senderName, phoneNumber, budget, cost, amount } = req.body;
-    const seller = req.headers.email?req.headers.email.toString():"";
+        const { topupId, senderName, phoneNumber, budget, cost, amount } = req.body;
+        const seller = req.headers.email ? req.headers.email.toString() : '';
 
-    const topup = await Topup.getTopup(topupId)
-    if (!topup) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'Topup not found'
-        });
-    }
+        const topup = await Topup.getTopup(topupId);
+        if (!topup) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Topup not found'
+            });
+        }
+        console.log('Topup', topup);
+        const email = req.headers.email ? req.headers.email.toString() : '';
 
-    if ( !topupId || !senderName || !phoneNumber || !budget || !amount || !cost || !seller) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'Missing required fieldsssssssssssss'
-        });
-    }
-        const reponseService = await topupOrderService.create( topupId, senderName, phoneNumber, budget, cost, amount, seller);
+        if (!topupId || !senderName || !phoneNumber || !budget || !amount || !cost || !seller) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Missing required fields'
+            });
+        }
+        const reponseService = await topupOrderService.create(email, topupId, senderName, phoneNumber, budget, cost, amount, seller);
+
+        if (!reponseService) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Error creating topup order'
+            });
+        }
 
         return res.status(200).json({
             status: 'success',
@@ -32,95 +40,177 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
     } catch (error) {
         return res.status(400).json({
             status: 'error',
-            message: 'Error creating topup order'
+            message: `Error creating topup order (${error})`
         });
     }
 };
 
-// const patchTopup = async (req: Request, res: Response, next: NextFunction) => {
-//     const id = req.params.id;
-//     const params = req.body;
+const patchTopupOrder = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    const params = req.body;
 
-//     if (!id) {
-//         return res.status(400).json({
-//             status: 'error',
-//             message: 'Missing required field "id"'
-//         });
-//     }
-//     if (req.body.length == 0) {
-//         return res.status(400).json({
-//             status: 'error',
-//             message: 'Missing required fields'
-//         });
-//     }
+    console.log('id', id);
+    console.log('params', params);
 
-//     try {
-//         const responseService = await topupService.patchTopup(id, params);
-//         if (!responseService) {
-//             return res.status(404).json({
-//                 status: 'error',
-//                 message: 'Topup not found'
-//             });
-//         }
-//         return res.status(200).json({
-//             status: 'success',
-//             message: 'Topup updated successfully',
-//             data: responseService
-//         });
-//     } catch (error) {
-//         return res.status(400).json({
-//             status: 'error',
-//             message: 'Error updating topup'
-//         });
-//     }
-// };
+    if (!id) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required field "id"'
+        });
+    }
+    if (req.body.length == 0) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required fields'
+        });
+    }
 
-// const deleteTopup = async (req: Request, res: Response, next: NextFunction) => {
-//     const id = req.params.id;
-//     if (!id) {
-//         return res.status(400).json({
-//             status: 'error',
-//             message: 'Missing required field "id"'
-//         });
-//     }
-//     try {
-//         const responseService = await topupService.deleteTopup(id);
-//         if (!responseService) {
-//             return res.status(404).json({
-//                 status: 'error',
-//                 message: 'Topup not found'
-//             });
-//         }
-//         return res.status(200).json({
-//             status: 'success',
-//             message: 'Topup deleted successfully',
-//             data: responseService
-//         });
-//     } catch (error) {
-//         return res.status(400).json({
-//             status: 'error',
-//             message: 'Error retrieving topups'
-//         });
-//     }
-// };
+    try {
+        const topupOrder = await topupOrderService.patchTopupOrder(id, params);
+        if (!topupOrder) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Error updating topup orders'
+            });
+        }
+        return res.status(200).json({
+            status: 'success',
+            message: 'Topup order updated successfully',
+            data: topupOrder
+        });
+    }catch (error) {
+        return res.status(400).json({
+            status: 'error',
+            message: `${error}`
+        });
+    }
+};
 
-// const getTopups = async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//         let { page = 1, pageSize = 20 } = req.query;
-//         const responseService = await topupService.getTopups(Number(page), Number(pageSize));
-//         return res.status(200).json({
-//             status: 'success',
-//             message: 'Topups retrieved successfully',
-//             ...responseService
-//         });
-//     } catch (error) {
-//         return res.status(400).json({
-//             status: 'error',
-//             message: 'Error retrieving topups'
-//         });
-//     }
-// };
+
+const deleteTopupOrder = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    if (!id) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required field "id"'
+        });
+    }
+    try {
+        const responseService = await topupOrderService.deleteTopupOrder(id);
+        if (!responseService) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Topup not found'
+            });
+        }
+        return res.status(200).json({
+            status: 'success',
+            message: 'Topup Order deleted successfully',
+            data: responseService
+        });
+    } catch (error) {
+        return res.status(400).json({
+            status: 'error',
+            message: `${error}`
+        });
+    }
+};
+
+const filter = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        let { page = 1, pageSize = 20} = req.query;
+        const status = req.body.status ? req.body.status : '';
+
+        const responseService = await topupOrderService.filter(Number(page), Number(pageSize), status);
+        return res.status(200).json({
+            status: 'success',
+            message: 'Topups retrieved successfully',
+            ...responseService
+        });
+    } catch (error) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Error retrieving topups'
+        });
+    }
+};
+
+const getTopupOrder = async (req: Request, res: Response, next: NextFunction) => {
+    const id:string = req.params.id;
+    if (!id) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required field "id"'
+        });
+    }
+    console.log('Deleting element ', id);
+    try {
+        const responseService = await topupOrderService.getTopupOrder(id);
+        if (!responseService) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Topup not found'
+            });
+        }
+        return res.status(200).json({
+            status: 'success',
+            message: 'Topup retrieved successfully',
+            data: responseService
+        });
+    } catch (error) {
+        return res.status(400).json({
+            status: 'error',
+            message: `${error}`
+        });
+    }
+};
+
+const setStatus = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    const status = req.body.status;
+    const email = req.headers.email ? req.headers.email.toString() : ''; 
+    console.log('id', id);
+    console.log('status', status);
+    console.log('email', email);
+    
+    if (!id) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required field "id"'
+        });
+    }
+    if (!status) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing required field "status"'
+        });
+    }
+    try {
+        const responseService = await topupOrderService.setStatus(id, status, email);
+        if (!responseService) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Topup not found'
+            });
+        }
+        return res.status(200).json({
+            status: 'success',
+            message: 'Topup status updated successfully',
+            data: responseService
+        });
+    } catch (error) {
+        return res.status(400).json({
+            status: 'error',
+            message: `${error}`
+        });
+    }
+};
 
 export default {
-    create
+    create,
+    patchTopupOrder,
+    deleteTopupOrder,
+    filter,
+    getTopupOrder,
+    setStatus
 };
