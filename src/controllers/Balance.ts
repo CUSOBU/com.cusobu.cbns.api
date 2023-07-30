@@ -3,6 +3,8 @@ import Balance, { IBalance } from '../models/Balance';
 import User from '../models/User';
 import { config } from '../config/config';
 
+import Configuration  from '../services/Configuration';
+
 const create = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, operational_price, customer_price, balance_usd = 0, balance_uyu = 0, operational_limit, pre_paid, allow_overlimit } = req.body;
@@ -70,7 +72,7 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
     
         balance = await balance.save();
 
-        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / config.UYU_EXCHANGE) {
+        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / Number(await Configuration.getValue("UYU_EXCHANGE"))) {
             return { status: 200, warning: 'Operational limit exceeded',  balance: balance };
         }
     

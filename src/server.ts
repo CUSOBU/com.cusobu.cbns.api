@@ -12,6 +12,7 @@ import statisticsRoutes from './routes/Statistics';
 import ProviderBalanceRoutes from './routes/ProviderBalance';
 import TopupRoutes from './routes/Topup';
 import TopupOrderRoutes from './routes/TopupOrder';
+import ConfigurationRoutes from './routes/Configuration';
 import passportStrategy from './config/passport';
 import passport from 'passport';
 
@@ -105,6 +106,7 @@ const StartServer = () => {
     app.use('/statistics', statisticsRoutes);
     app.use('/topups', TopupRoutes);
     app.use('/topuporders', TopupOrderRoutes);
+    app.use('/configs', ConfigurationRoutes)
 
     /** HealthCheck */
     app.get('/health', (req: Request, res: Response, next: NextFunction) => res.status(200).json({ message: 'OK :)' }));

@@ -1,5 +1,5 @@
-import Balance, { IBalance } from '../models/Balance';
-import {config} from '../config/config';
+import Balance from '../models/Balance';
+import Configuration from '../services/Configuration';
  
 const getBalanceByEmail = async (email: string) => {
     let balance = await Balance.findOne({ email: email });
@@ -28,7 +28,7 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
     
         balance = await balance.save();
 
-        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / config.UYU_EXCHANGE) {
+        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / Number(await Configuration.getValue("UYU_EXCHANGE"))) {
            throw new Error('Balance exceeds operational limit');
         }
     
