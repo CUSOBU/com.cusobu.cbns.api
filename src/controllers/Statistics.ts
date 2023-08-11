@@ -4,6 +4,7 @@ import balanceController from "./Balance";
 import providerBalanceController from "./ProviderBalance";
 import serviceRemittances from "../services/Remittance";
 import { Status } from "../common/Status";
+import Configuration from "../services/Configuration";
 
 const getBalance = async (req: Request, res: Response, next: NextFunction) => {
   let balanceData = {};
@@ -33,7 +34,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
       customer_price: balance.customer_price,
       operational_limit: balance.operational_limit,
       last_update: balance.last_update,
-      EXCHANGE: config.UYU_EXCHANGE
+      EXCHANGE:Number(await Configuration.getValue("UYU_EXCHANGE"))
     };
 
     //Remittances Data
@@ -67,7 +68,7 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
       customer_price: balance.operational_price,
       operational_limit: balance.operational_limit,
       last_update: balance.last_update,
-      EXCHANGE: config.UYU_EXCHANGE
+      EXCHANGE: Number(await Configuration.getValue("UYU_EXCHANGE"))
     };
 
     //Remittances Data

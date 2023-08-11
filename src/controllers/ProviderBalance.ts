@@ -1,6 +1,7 @@
 import { Response, Request, NextFunction } from 'express';
-import ProviderBalance, { IProviderBalance } from '../models/ProviderBalance';
+import ProviderBalance from '../models/ProviderBalance';
 import { config } from '../config/config';
+import Configuration from '../services/Configuration';
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -64,7 +65,7 @@ const addBudget = async (email: string, budget: number, budget_currency: string)
             throw new Error('Invalid currency');
         }
 
-        if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / config.CUP_EXCHANGE) {
+        if (balance.operational_limit < balance.balance_mlc + balance.balance_cup / Number(await Configuration.getValue("CUP_EXCHANGE"))) {
            throw new Error('Budget exceeds operational limit');
         }
 

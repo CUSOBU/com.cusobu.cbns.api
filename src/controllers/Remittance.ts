@@ -5,6 +5,7 @@ import codificator from "../common/Codification";
 import Balance from "./Balance";
 import ProviderBalance from "./ProviderBalance";
 import { Status } from "../common/Status";
+import Configuration from "../services/Configuration";
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -34,6 +35,9 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
       remittance_currency,
       remittance_rate
     );
+
+    console.log("remittancePrice:", remittancePrice);
+
     const remittance_amount = remittancePrice.remittance_amount;
     const operation_cost = remittancePrice.operation_cost;
 
@@ -54,6 +58,8 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
       statusCode: 0,
       webhook: config.URL + "/hook/mlc/" + identifier + "-" + encryptedCard
     });
+
+    console.log("remittance:", remittance);
 
     await Balance.addBudget(email, operation_cost, budget_currency);
 
@@ -407,11 +413,11 @@ const getPrices = async (
     let operation_cost = ((budget_amount * 1) / operational_price).toFixed();
 
     if (budget_currency == "UYU") {
-      remittance_amount = remittance_amount / Number(config.UYU_EXCHANGE);
+      remittance_amount = remittance_amount / Number(await Configuration.getValue("UYU_EXCHANGE"));
     }
     if (remmitance_currency == "CUP") {
-      remittance_amount = remittance_amount * Number(config.CUP_EXCHANGE);
-    }
+      remittance_amount = remittance_amount * Number(await Configuration.getValue("CUP_EXCHANGE"));
+    }5
 
     const remittance_prices = {
       budget_amount: Number(budget_amount),
