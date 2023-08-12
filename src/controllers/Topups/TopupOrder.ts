@@ -120,8 +120,11 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
     try {
         let { page = 1, pageSize = 20} = req.query;
         const status = req.body.status ? req.body.status : '';
+        const startDate = req.body.startDate ? req.body.startDate : null;
+        const endDate = req.body.endDate ? req.body.endDate : null;
+        const phoneNumber = req.body.phoneNumber ? req.body.phoneNumber : '';
 
-        const responseService = await topupOrderService.filter(Number(page), Number(pageSize), status);
+        const responseService = await topupOrderService.filter(Number(page), Number(pageSize), status, startDate, endDate, phoneNumber);
         return res.status(200).json({
             status: 'success',
             message: 'Topups retrieved successfully',
