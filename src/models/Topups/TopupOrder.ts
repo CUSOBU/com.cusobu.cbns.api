@@ -29,7 +29,8 @@ const TopupOrderSchema: Schema = new Schema(
         status: { type: String, required: true, default: Status.Pending },
         statusCode: { type: String, required: true, default: '0' },
         seller: { type: String, default: '0' },
-        provider: { type: String, default: '0' }
+        provider: { type: String, default: '0' },
+        evidence: { type: String, default: '' },
     },
     schemaOptions
 );

@@ -1,12 +1,11 @@
 import Remittance from '../models/Remittance';
 
 const getRemittances = async (params: any) => {
-    const remittances = await Remittance.find(params);
-    return remittances;
+    return Remittance.find(params);
 };
 
 const getRemittancesByDate = async (params: any) => {
-    const remittanceCounts = await Remittance.aggregate([
+    return  Remittance.aggregate([
         {
             $match: params // Filtrar las remesas según los parámetros proporcionados
         },
@@ -28,12 +27,10 @@ const getRemittancesByDate = async (params: any) => {
             }
         }
     ]);
-
-    return remittanceCounts;
 };
 
 const getRemittancesByStatus = async (params: any) => {
-    const remittanceCountsByState = await Remittance.aggregate([
+    return  Remittance.aggregate([
         {
             $match: params // Filtrar las remesas según los parámetros proporcionados
         },
@@ -51,8 +48,6 @@ const getRemittancesByStatus = async (params: any) => {
             }
         }
     ]);
-
-    return remittanceCountsByState;
 };
 
 export default {
