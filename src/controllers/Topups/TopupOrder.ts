@@ -171,6 +171,7 @@ const getTopupOrder = async (req: Request, res: Response, next: NextFunction) =>
 const setStatus = async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const status = req.body.status;
+    const evidence = req.body.evidence? req.body.evidence : '';
     const email = req.headers.email ? req.headers.email.toString() : ''; 
     console.log('id', id);
     console.log('status', status);
@@ -189,7 +190,7 @@ const setStatus = async (req: Request, res: Response, next: NextFunction) => {
         });
     }
     try {
-        const responseService = await topupOrderService.setStatus(id, status, email);
+        const responseService = await topupOrderService.setStatus(id, status, email, evidence);
         if (!responseService) {
             return res.status(404).json({
                 status: 'error',

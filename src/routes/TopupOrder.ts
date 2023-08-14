@@ -9,7 +9,7 @@ router.patch('/:id', verifyJWT, controller.patchTopupOrder);
 router.delete('/:id', verifyJWT, controller.deleteTopupOrder);
 router.post('/filter', verifyJWT, controller.filter);
 
-router.post('/setstatus/:id', verifyJWT, controller.setStatus);
+router.post('/setstatus/:id', verifyJWT, authorizeRole(["provider", "admin"]), controller.setStatus);
 
 router.get('/:id', verifyJWT, controller.getTopupOrder);
 

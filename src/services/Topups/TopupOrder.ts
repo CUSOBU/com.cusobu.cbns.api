@@ -164,10 +164,11 @@ const getTopupOrder = async (id: string) => {
     }
 };
 
-const setStatus = async (id: string, status: Status, provider: string) => {
+const setStatus = async (id: string, status: Status, provider: string, evidence:string) => {
     console.log('topupoder_id: ', id);
     console.log('Status: ', status);
     console.log('provider: ', provider);
+    console.log('evidence: ', evidence);
 
     if (!id) {
         throw new Error('Missing required field "id"');
@@ -181,7 +182,7 @@ const setStatus = async (id: string, status: Status, provider: string) => {
     if (!topupOrder) {
         throw new Error('Topup order not found');
     }
-    console.log("topupOrder", topupOrder);
+    console.log("topupOrder Found", topupOrder);
 
     if (status == Status.Delivery) {
         if (!provider) {
@@ -212,7 +213,9 @@ const setStatus = async (id: string, status: Status, provider: string) => {
 
         await BalanceService.addBudget(topupOrder.seller, topupOrder.cost, Currencies.UYU);
     }
-    const responseService = await topupOrder.set({status: status, email: provider}).save();
+    const responseService = await topupOrder.set({status: status, provider: provider, evidence:evidence}).save();
+    console.log("AQUIIIIIII");
+
     if (!responseService) {
         throw new Error('Error updating topup order');
     }
