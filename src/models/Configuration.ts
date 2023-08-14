@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import IConf from '../interfaces/Configuration';
+import IConf from '../interfaces/configuration';
 
 const schemaOptions = {
     timestamps: true, // assigns createdAt and updatedAt fields to the schema
