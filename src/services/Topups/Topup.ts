@@ -35,6 +35,7 @@ const deleteTopup = async (id: string) => {
 };
 
 const getTopups = async (page: Number, pageSize: Number) => {
+    console.log("getTopups")
     try {
         page = Number(page);
         pageSize = Number(pageSize);

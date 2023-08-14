@@ -12,7 +12,7 @@ import statisticsRoutes from './routes/Statistics';
 import ProviderBalanceRoutes from './routes/ProviderBalance';
 import TopupRoutes from './routes/Topup';
 import TopupOrderRoutes from './routes/TopupOrder';
-import ConfigurationRoutes from './routes/Configuration';
+import ConfigurationRoutes from './routes/configuration';
 import passportStrategy from './config/passport';
 import passport from 'passport';
 
