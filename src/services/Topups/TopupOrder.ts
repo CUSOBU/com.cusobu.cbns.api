@@ -71,7 +71,6 @@ const filter = async (page: Number, pageSize: Number, status: {}, startDate: Dat
 
 
         if (startDate!=null) {
-            console.log("Start date", startDate)
             let localDate = new Date(startDate); // Convert string to Date object
             startDate = new Date(
                 Date.UTC(
@@ -85,7 +84,6 @@ const filter = async (page: Number, pageSize: Number, status: {}, startDate: Dat
             ); // Convert to UTC
         }
         if (endDate != null) {
-            console.log("End date", endDate)
             let localDate = new Date(endDate); // Convert string to Date object
             endDate = new Date(
                 Date.UTC(
@@ -102,7 +100,6 @@ const filter = async (page: Number, pageSize: Number, status: {}, startDate: Dat
         // Create filter
         let filter: any = {};
         if (startDate != null && endDate != null) {
-            console.log("Filtering")
             filter["createdAt"] = {
                 $gte: new Date(startDate), // Mayor o igual que startDate
                 $lte: new Date(endDate) // Menor o igual que endDate
@@ -111,7 +108,6 @@ const filter = async (page: Number, pageSize: Number, status: {}, startDate: Dat
 
 
         if (status) {
-            console.log('status', status);
             if (!Array.isArray(status)) {
                 console.log('status is not array');
                 status = [status];
@@ -122,7 +118,6 @@ const filter = async (page: Number, pageSize: Number, status: {}, startDate: Dat
             filter['phoneNumber'] = phoneNumber;
         }
 
-        console.log('filter', filter);
         const topupOrders = await TopupOrder.find(filter)
             .skip((Number(page) - 1) * Number(pageSize))
             .limit(Number(pageSize))
@@ -141,7 +136,6 @@ const filter = async (page: Number, pageSize: Number, status: {}, startDate: Dat
             data: topupOrders
         };
     } catch (error) {
-        console.log(error);
         throw new Error('Error retrieving topups');
     }
 };
@@ -151,7 +145,6 @@ const getTopupOrder = async (id: string) => {
         if (!id) {
             throw new Error('Missing required field "id"');
         }
-        console.log('id', id);
         const topupOrder = await TopupOrder.findOne({id});
         console.log('topupOrder', topupOrder);
         if (!topupOrder) {
@@ -159,16 +152,11 @@ const getTopupOrder = async (id: string) => {
         }
         return topupOrder;
     } catch (error) {
-        console.log(error);
         throw new Error('Error retrieving topup order');
     }
 };
 
 const setStatus = async (id: string, status: Status, provider: string, evidence:string) => {
-    console.log('topupoder_id: ', id);
-    console.log('Status: ', status);
-    console.log('provider: ', provider);
-    console.log('evidence: ', evidence);
 
     if (!id) {
         throw new Error('Missing required field "id"');
@@ -214,7 +202,6 @@ const setStatus = async (id: string, status: Status, provider: string, evidence:
         await BalanceService.addBudget(topupOrder.seller, topupOrder.cost, Currencies.UYU);
     }
     const responseService = await topupOrder.set({status: status, provider: provider, evidence:evidence}).save();
-    console.log("AQUIIIIIII");
 
     if (!responseService) {
         throw new Error('Error updating topup order');

@@ -35,7 +35,6 @@ const deleteTopup = async (id: string) => {
 };
 
 const getTopups = async (page: Number, pageSize: Number) => {
-    console.log("getTopups")
     try {
         page = Number(page);
         pageSize = Number(pageSize);
@@ -58,7 +57,6 @@ const getTopups = async (page: Number, pageSize: Number) => {
             data: topups
         };
     } catch (error) {
-        console.log(error);
         throw new Error('Error retrieving topups');
     }
 };
@@ -66,13 +64,11 @@ const getTopups = async (page: Number, pageSize: Number) => {
 const getTopup = async (id: string) => {
     try {
         const topup = await Topup.findOne({ id });
-        console.log("topup: ", topup);
         if (!topup) {
             throw new Error('Topup not found');
         }
         return topup;
     } catch (error) {
-        console.log(error);
         throw new Error('Error retrieving topup');
     }
 };

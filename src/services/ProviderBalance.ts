@@ -2,9 +2,7 @@ import ProviderBalance from '../models/ProviderBalance';
 import {Currencies} from '../common/Currencies';
 
 const getProviderBalance = async (params: any) => {
-    console.log('params', params)
-    const providerBalance = await ProviderBalance.findOne(params);
-    return providerBalance;
+    return await ProviderBalance.findOne(params);
 };
 
 const addBudget = async (email: string, amount: number, currency: string) => {

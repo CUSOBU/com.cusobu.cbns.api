@@ -303,14 +303,12 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
         if (phone_number) {
             filter["phone_number"] = phone_number; // Estado del proceso
         }
-        console.log("role:", role);
 
         if (role && role == "seller") {
             filter["email"] = email;
         } else if (role && role == "provider") {
             filter["provider"] = {$in: [email, "", null]};
         }
-        console.log("filter:", filter);
 
         // get documents count
         const totalDocuments = await Remittance.countDocuments(filter);

@@ -14,7 +14,6 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
                 message: 'Topup not found'
             });
         }
-        console.log('Topup', topup);
         const email = req.headers.email ? req.headers.email.toString() : '';
 
         if (!topupId || !senderName || !phoneNumber || !budget || !amount || !cost || !seller) {
@@ -48,9 +47,6 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
 const patchTopupOrder = async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const params = req.body;
-
-    console.log('id', id);
-    console.log('params', params);
 
     if (!id) {
         return res.status(400).json({
@@ -172,10 +168,7 @@ const setStatus = async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const status = req.body.status;
     const evidence = req.body.evidence? req.body.evidence : '';
-    const email = req.headers.email ? req.headers.email.toString() : ''; 
-    console.log('id', id);
-    console.log('status', status);
-    console.log('email', email);
+    const email = req.headers.email ? req.headers.email.toString() : '';
     
     if (!id) {
         return res.status(400).json({

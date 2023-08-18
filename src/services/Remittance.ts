@@ -81,13 +81,6 @@ const getRemittancePrices = async (email: string, budget_amount: number, budget_
             remittance_amount = remittance_amount * Number(await Configuration.getValue("CUP_EXCHANGE"));
         }
 
-        console.log("###########\n " +
-            "\ncustomer_price: " + customer_price +
-            "\nbudget_amount: " + budget_amount +
-            "\noperation_cost: " + operation_cost +
-            "\nremittance_amount: " + remittance_amount +
-            "\n###########")
-
         return {
             budget_amount: Number(budget_amount),
             remittance_amount: Math.trunc(Number(remittance_amount)),
