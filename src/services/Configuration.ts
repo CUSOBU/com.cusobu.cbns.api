@@ -39,8 +39,7 @@ const getValue = async (key: string) => {
 const addConfiguration = async (key: string, value: string) => {
     const Conf = new Configuration({key: key, value: value});
     try {
-        const configuration = await Conf.save();
-        return configuration;
+        return await Conf.save();
     } catch (err) {
         throw new Error("Error saving configuration");
     }
