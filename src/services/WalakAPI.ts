@@ -2,8 +2,9 @@ import { Response, Request, NextFunction } from "express";
 import Remittance, { IRemittance } from "../models/Remittance";
 import axios from "axios";
 import codificator from "../common/Codification";
-import Balance from "../controllers/Balance";
+import Balance from "../services/Balance";
 import { Status } from "../common/Status";
+
 
 const WALAK_API_URL = "https://api.dev.walak.app/api/mlc";
 const WALAK_API_KEY =

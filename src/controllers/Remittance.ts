@@ -2,10 +2,10 @@ import e, {Response, Request, NextFunction} from "express";
 import Remittance, {IRemittance} from "../models/Remittance";
 import {config} from "../config/config";
 import codificator from "../common/Codification";
-import Balance from "./Balance";
+import Balance from "../services/Balance";
 import ProviderBalance from "./ProviderBalance";
 import {Status} from "../common/Status";
-import Configuration from "../services/Configuration";
+import remittanceServices  from "../services/Remittance";
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -28,7 +28,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
         const identifier =
             olderRemittance.length > 0 ? olderRemittance[0].identifier + 1 : 1;
 
-        const remittancePrice = await getPrices(
+        let remittancePrice = await remittanceServices.getRemittancePrices(
             email,
             budget_amount,
             budget_currency,
@@ -104,11 +104,6 @@ const setStatusProvider = async (
     next: NextFunction
 ) => {
     try {
-        if (Object.keys(req.body).length === 0) {
-            return res
-                .status(400)
-                .json({message: "Request body must not be empty"});
-        }
 
         const provider = req.headers.email?.toString();
         const remittanceId = req.params.id;
@@ -159,9 +154,9 @@ const setStatusProvider = async (
                 remittanceDB.operation_cost * -1,
                 remittanceDB.budget_currency
             );
-            if (!balanceResponse || balanceResponse.error) {
+            if (!balanceResponse) {
                 return res.status(400).json({
-                    message: `Provider Balance not found3. ${balanceResponse.error}`
+                    message: "Provider Balance not found3."
                 });
             }
         }
@@ -322,6 +317,7 @@ const filter = async (req: Request, res: Response, next: NextFunction) => {
 
         // get remittances
         Remittance.find(filter)
+            .sort({createdAt: -1})
             .skip((page - 1) * pageSize)
             .limit(pageSize)
             .then((remittances) => {
@@ -377,7 +373,7 @@ const getRemittancePrice = async (
         if (req.body.remittance_rate)
             remittance_rate = Number(req.body.remittance_rate);
 
-        const remittance_prices = await getPrices(
+        const remittance_prices = await remittanceServices.getRemittancePrices(
             email,
             budget,
             budget_currency,
@@ -388,45 +384,6 @@ const getRemittancePrice = async (
         res.status(200).json({remittance_prices});
     } catch (error) {
         return res.status(400).json({error});
-    }
-};
-
-const getPrices = async (email: string, budget_amount: number, budget_currency: string, remmitance_currency: string, remittance_rate: number) => {
-    try {
-        let balance = await Balance.getBalanceByEmail(email);
-        if (!balance) {
-            throw new Error("Balance not found");
-        }
-
-        const operational_price: number = balance.operational_price;
-        if (remittance_rate < operational_price && remittance_rate != 0) {
-            throw new Error("Remittance rate is lower than operation cost");
-        }
-        const customer_price: number =
-            remittance_rate != 0 ? remittance_rate : balance.customer_price;
-
-        let remittance_amount = (budget_amount * 1) / customer_price;
-        let operation_cost =  budget_amount - (budget_amount*(customer_price-operational_price)) //((budget_amount * 1) / operational_price).toFixed();
-
-        if (budget_currency == "UYU") {
-            remittance_amount = remittance_amount / Number(await Configuration.getValue("UYU_EXCHANGE"));
-        }
-        if (remmitance_currency == "CUP") {
-            remittance_amount = remittance_amount * Number(await Configuration.getValue("CUP_EXCHANGE"));
-        }
-        5
-
-        const remittance_prices = {
-            budget_amount: Number(budget_amount),
-            remittance_amount: Math.round(Number(remittance_amount)),
-            operation_cost: Number(operation_cost),
-            customer_price: Number(customer_price),
-            operational_price: Number(operational_price)
-        };
-
-        return remittance_prices;
-    } catch (error) {
-        throw error;
     }
 };
 

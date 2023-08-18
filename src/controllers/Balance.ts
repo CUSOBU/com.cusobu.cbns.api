@@ -2,6 +2,8 @@ import { Response, Request, NextFunction } from 'express';
 import Balance, { IBalance } from '../models/Balance';
 import User from '../models/User';
 import { config } from '../config/config';
+import BalanceServices from "../services/Balance";
+
 
 import Configuration  from '../services/Configuration';
 
@@ -39,46 +41,10 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
 
 const postBudget = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const budget = await addBudget(req.body.email, Number(req.body.amount), req.body.budget_currency);
-        if (budget.error) {
-            return res.status(budget.status).json({ error: budget.error});
-        }
+        const budget = await BalanceServices.addBudget(req.body.email, Number(req.body.amount), req.body.budget_currency);
         return res.status(201).json({ message: 'Budget added successfully', budget });
     } catch (error) {
         return res.status(500).json({ error: 'An error occurred while saving the balance.' });
-    }
-};
-
-
-const addBudget = async (email: string, budget: number, budget_currency: string) => {
-
-    try {
-        if (!email || !budget || !budget_currency) {
-            return { status: 400, error: 'Missing parameters' };
-        }
-        let balance = await Balance.findOne({ email: email });
-    
-        if (!balance) {
-            return { status: 404, error: 'Balance does not exist' };
-        }
-    
-        if (budget_currency === 'USD') {
-            balance.balance_usd += budget;
-        } else if (budget_currency === 'UYU') {
-            balance.balance_uyu += budget;
-        } else {
-            return { status: 400, error: 'Invalid currency' };
-        }
-    
-        balance = await balance.save();
-
-        if (balance.operational_limit < balance.balance_usd + balance.balance_uyu / Number(await Configuration.getValue("UYU_EXCHANGE"))) {
-            return { status: 200, warning: 'Operational limit exceeded',  balance: balance };
-        }
-    
-        return {status: 200, balance : balance};
-    } catch (error) {
-        throw new Error(`An error occurred while saving the balance. ${error}`);
     }
 };
 
@@ -135,8 +101,11 @@ const getBalance = async (req: Request, res: Response, next: NextFunction) => {
 }
 
 const getBalanceByEmail = async (email: string) => {
-        let balance = await Balance.findOne({ email: email });
-        return balance; 
+    try{
+        return await Balance.findOne({ email: email });
+    }catch(error){
+        throw new Error(`An error occurred while saving the balance. ${error}`);
+    }
 };
 
 export default {
@@ -145,6 +114,5 @@ export default {
     getOne,
     update,
     getBalanceByEmail,
-    addBudget,
     postBudget
 };
