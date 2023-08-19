@@ -170,8 +170,6 @@ const setStatus = async (id: string, status: Status, provider: string, evidence:
     if (!topupOrder) {
         throw new Error('Topup order not found');
     }
-    console.log("topupOrder Found", topupOrder);
-
     if (status == Status.Delivery) {
         if (!provider) {
             throw new Error('Missing required field "provider"');
@@ -181,25 +179,30 @@ const setStatus = async (id: string, status: Status, provider: string, evidence:
         provider = "";
     }
     if (status == Status.Complete) {
-        let providerBalance = await ProviderBalance.getProviderBalance({email: provider});
-        if (!providerBalance) {
-            throw new Error('Provider not found');
-        }
-        console.log("providerBalance", providerBalance);
 
-        let sellerBalance = BalanceService.getBalanceByEmail(topupOrder.seller);
-        if (!sellerBalance) {
-            throw new Error('Seller not found');
+        console.log("topupOrder", topupOrder);
+
+        let providerBalance = await ProviderBalance.getProviderBalance({email: provider});
+        let sellerBalance = await BalanceService.getBalanceByEmail(topupOrder.email);
+
+
+        if (!providerBalance || !sellerBalance) {
+            // console.log("providerBalance", providerBalance);
+            console.log("sellerBalance", sellerBalance);
+            throw new Error('Provider?Seller not found');
         }
-        console.log("sellerBalance", sellerBalance);
+
 
         providerBalance.balance_cup += (topupOrder.amount + (providerBalance.topups_rate ? providerBalance.topups_rate : 0));
         providerBalance = await providerBalance.save();
-        if (!providerBalance) {
+
+        sellerBalance.balance_uyu += topupOrder.cost;
+        sellerBalance.save();
+
+
+        if (!providerBalance || !sellerBalance) {
             throw new Error('Error updating provider balance');
         }
-
-        await BalanceService.addBudget(topupOrder.seller, topupOrder.cost, Currencies.UYU);
     }
     const responseService = await topupOrder.set({status: status, provider: provider, evidence:evidence}).save();
 
